@@ -93,11 +93,11 @@ struct PopoverView: View {
         ReturnToSubmitTextEditor(text: $newNoteText, onSubmit: addNote)
             .frame(height: 80)
             .padding(8)
-            .background(selectedColor.swiftUIColor.opacity(0.6))
+            .background(Color.gray.opacity(0.08))
             .cornerRadius(10)
             .overlay(
                 RoundedRectangle(cornerRadius: 10)
-                    .stroke(Color.gray.opacity(0.2), lineWidth: 1)
+                    .stroke(Color.gray.opacity(0.15), lineWidth: 1)
             )
             .padding(.horizontal, 16)
             .padding(.vertical, 12)
