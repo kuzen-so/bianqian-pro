@@ -182,7 +182,7 @@ struct StickyNoteView: View {
     @State private var showFormatBar = false
 
     private var bgColor: Color {
-        colorScheme == .dark ? Color(white: 0.18).opacity(0.92) : Color.white.opacity(0.85)
+        colorScheme == .dark ? Color(white: 0.08).opacity(0.95) : Color.white.opacity(0.90)
     }
 
     private var titleText: String {
@@ -327,6 +327,10 @@ struct StickyNoteView: View {
         )
         .padding(.horizontal, 14)
         .padding(.vertical, 16)
+        .background(
+            RoundedRectangle(cornerRadius: 8)
+                .stroke(Color.gray.opacity(colorScheme == .dark ? 0.25 : 0.15), lineWidth: 1)
+        )
     }
 
     private var footerBar: some View {
