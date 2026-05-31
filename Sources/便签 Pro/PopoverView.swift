@@ -34,7 +34,8 @@ struct PopoverView: View {
             }
         }
         .onAppear {
-            selectedColor = colorScheme == .dark ? .dark : .gray
+            let isDark = UserDefaults.standard.string(forKey: "AppleInterfaceStyle") == "Dark"
+            selectedColor = isDark ? .dark : .gray
         }
         .alert("添加标签", isPresented: $showTagAlert) {
             TextField("标签名称", text: $newTagText)
