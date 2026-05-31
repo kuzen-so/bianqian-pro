@@ -1,4 +1,4 @@
-# QuickNote 📝
+# 便签 Pro 📝
 
 一个轻量级的 macOS 菜单栏便签应用。点击状态栏图标弹出白板记录灵感，也可以将便签贴在桌面上随时查看。
 
@@ -14,7 +14,7 @@
 ## 项目结构
 
 ```
-QuickNote/
+便签 Pro/
 ├── Package.swift              # Swift Package 配置
 ├── README.md
 ├── build_app.sh               # 打包脚本
@@ -32,7 +32,7 @@ QuickNote/
 ### 开发调试
 
 ```bash
-cd QuickNote
+cd 便签 Pro
 swift run
 ```
 
@@ -41,11 +41,11 @@ swift run
 ### 打包成 .app
 
 ```bash
-cd QuickNote
+cd 便签 Pro
 ./build_app.sh
 ```
 
-打包完成后，会在当前目录生成 `QuickNote.app`，可以拖到 `/Applications` 中使用。
+打包完成后，会在当前目录生成 `便签 Pro.app`，可以拖到 `/Applications` 中使用。
 
 ## 使用说明
 

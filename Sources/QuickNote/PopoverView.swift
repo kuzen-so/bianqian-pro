@@ -422,7 +422,7 @@ struct SettingsView: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text("开机自启动")
                     .font(.system(size: 14, weight: .medium))
-                Text("登录系统时自动运行 QuickNote")
+                Text("登录系统时自动运行 便签 Pro")
                     .font(.caption2)
                     .foregroundStyle(.secondary)
             }
