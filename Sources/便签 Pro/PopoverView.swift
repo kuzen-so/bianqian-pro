@@ -69,27 +69,25 @@ struct PopoverView: View {
 
     private var tabSwitcher: some View {
         HStack(spacing: 0) {
-            Button("活跃") {
-                showArchived = false
-            }
-            .font(.system(size: 12, weight: showArchived ? .regular : .semibold))
-            .foregroundStyle(showArchived ? .secondary : .primary)
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 6)
-            .background(showArchived ? Color.clear : Color.gray.opacity(0.15))
-            .cornerRadius(6)
-            .contentShape(Rectangle())
+            Text("活跃")
+                .font(.system(size: 12, weight: showArchived ? .regular : .semibold))
+                .foregroundStyle(showArchived ? .secondary : .primary)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 6)
+                .background(showArchived ? Color.clear : Color.gray.opacity(0.15))
+                .cornerRadius(6)
+                .contentShape(Rectangle())
+                .onTapGesture { showArchived = false }
 
-            Button("完成") {
-                showArchived = true
-            }
-            .font(.system(size: 12, weight: showArchived ? .semibold : .regular))
-            .foregroundStyle(showArchived ? .primary : .secondary)
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 6)
-            .background(showArchived ? Color.gray.opacity(0.15) : Color.clear)
-            .cornerRadius(6)
-            .contentShape(Rectangle())
+            Text("完成")
+                .font(.system(size: 12, weight: showArchived ? .semibold : .regular))
+                .foregroundStyle(showArchived ? .primary : .secondary)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 6)
+                .background(showArchived ? Color.gray.opacity(0.15) : Color.clear)
+                .cornerRadius(6)
+                .contentShape(Rectangle())
+                .onTapGesture { showArchived = true }
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 4)

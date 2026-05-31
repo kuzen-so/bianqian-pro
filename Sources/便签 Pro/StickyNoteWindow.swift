@@ -186,7 +186,7 @@ struct StickyNoteView: View {
     }
 
     private func updateColorScheme() {
-        let isDark = NSApp.effectiveAppearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
+        let isDark = UserDefaults.standard.string(forKey: "AppleInterfaceStyle") == "Dark"
         effectiveColorScheme = isDark ? .dark : .light
     }
 
