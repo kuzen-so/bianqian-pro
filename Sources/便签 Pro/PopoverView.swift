@@ -448,9 +448,35 @@ struct SettingsView: View {
             shortcutRow
             obsidianRow
             Spacer()
+            quitButton
+            versionText
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
+    }
+
+    private var quitButton: some View {
+        Button(action: { NSApp.terminate(nil) }) {
+            Text("退出应用")
+                .font(.system(size: 13, weight: .medium))
+                .foregroundStyle(.primary)
+                .padding(.horizontal, 24)
+                .padding(.vertical, 8)
+                .background(Color.red.opacity(0.12))
+                .cornerRadius(8)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8)
+                        .stroke(Color.red.opacity(0.25), lineWidth: 1)
+                )
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var versionText: some View {
+        let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
+        return Text("版本 \(version)")
+            .font(.caption2)
+            .foregroundStyle(.secondary.opacity(0.6))
     }
 
     private var launchAtLoginRow: some View {
