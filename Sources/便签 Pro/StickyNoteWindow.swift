@@ -80,7 +80,8 @@ class StickyNoteWindowController: NSWindowController {
 
     func savePosition() {
         guard let window = self.window else { return }
-        var updated = note
+        // 从 store 取最新 note，避免用本地旧副本覆盖已编辑的内容
+        guard var updated = store.notes.first(where: { $0.id == note.id }) else { return }
         updated.position = CGPoint(x: window.frame.origin.x, y: window.frame.origin.y)
         updated.size = CGSize(width: window.frame.size.width, height: window.frame.size.height)
         store.update(updated)
