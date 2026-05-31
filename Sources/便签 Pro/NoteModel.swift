@@ -74,7 +74,7 @@ enum NoteColor: String, Codable, CaseIterable {
     case purple = "#E1BEE7"
     case orange = "#FFE0B2"
     case white = "#FFFFFF"
-    case gray = "#F5F5F5"
+    case gray = "#E0E0E0"
     case dark = "#424242"
 
     var swiftUIColor: Color {
