@@ -1,5 +1,6 @@
 import SwiftUI
 import ServiceManagement
+import ApplicationServices
 
 struct PopoverView: View {
     @ObservedObject var store: NoteStore
@@ -25,7 +26,7 @@ struct PopoverView: View {
             .background(.regularMaterial)
 
             if showSettings {
-                SettingsView(onClose: { showSettings = false })
+                SettingsView(store: store, onClose: { showSettings = false })
                     .frame(width: 400, height: 400)
                     .background(.regularMaterial)
                     .transition(.move(edge: .trailing))
@@ -271,6 +272,9 @@ struct NoteRow: View {
             Button("添加标签") {
                 onAddTag()
             }
+            Button("同步到 Obsidian") {
+                ObsidianSyncManager.shared.syncSingleNote(note)
+            }
             Divider()
             Button("删除", role: .destructive) {
                 store.delete(note)
@@ -348,6 +352,9 @@ struct ArchivedNoteRow: View {
             Button("添加标签") {
                 onAddTag()
             }
+            Button("同步到 Obsidian") {
+                ObsidianSyncManager.shared.syncSingleNote(note)
+            }
             Divider()
             Button("删除", role: .destructive) {
                 store.delete(note)
@@ -359,9 +366,12 @@ struct ArchivedNoteRow: View {
 // MARK: - Settings View
 
 struct SettingsView: View {
+    @ObservedObject var store: NoteStore
     var onClose: () -> Void
     @State private var launchAtLogin = false
-    @State private var isRecordingShortcut = false
+    @State private var isRecordingAction: ShortcutAction? = nil
+    @State private var hasAccessibilityPermission = false
+    @State private var obsidianVaultPath: String = ObsidianSyncManager.shared.vaultPath ?? ""
 
     var body: some View {
         VStack(spacing: 0) {
@@ -370,7 +380,27 @@ struct SettingsView: View {
         }
         .onAppear {
             launchAtLogin = (SMAppService.mainApp.status == .enabled)
+            checkAccessibilityPermission()
+            // 重新注册全局快捷键（权限可能已变更）
+            GlobalShortcutManager.shared.register()
         }
+        .task {
+            // 每秒检查一次权限状态，授权后自动刷新 UI
+            while !Task.isCancelled {
+                checkAccessibilityPermission()
+                try? await Task.sleep(nanoseconds: 1_000_000_000)
+            }
+        }
+    }
+
+    private func checkAccessibilityPermission() {
+        let options = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: false]
+        hasAccessibilityPermission = AXIsProcessTrustedWithOptions(options as CFDictionary)
+    }
+
+    private func openAccessibilitySettings() {
+        guard let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility") else { return }
+        NSWorkspace.shared.open(url)
     }
 
     private var header: some View {
@@ -411,6 +441,7 @@ struct SettingsView: View {
         VStack(spacing: 12) {
             launchAtLoginRow
             shortcutRow
+            obsidianRow
             Spacer()
         }
         .padding(.horizontal, 16)
@@ -441,73 +472,125 @@ struct SettingsView: View {
     }
 
     private var shortcutRow: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: 12) {
             HStack {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("全局快捷键")
-                        .font(.system(size: 14, weight: .medium))
-                    Text("任意界面呼出白板")
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                }
+                Text("全局快捷键")
+                    .font(.system(size: 14, weight: .medium))
                 Spacer()
             }
 
-            HStack(spacing: 8) {
-                Text(GlobalShortcutManager.shared.currentShortcutDisplay)
-                    .font(.system(size: 13, weight: .medium, design: .monospaced))
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(isRecordingShortcut ? Color.accentColor.opacity(0.15) : Color.gray.opacity(0.12))
-                    .foregroundStyle(isRecordingShortcut ? Color.accentColor : .primary)
-                    .cornerRadius(6)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 6)
-                            .stroke(isRecordingShortcut ? Color.accentColor : Color.clear, lineWidth: 1.5)
-                    )
-
-                Button(isRecordingShortcut ? "取消" : "修改") {
-                    if isRecordingShortcut {
-                        ShortcutRecorder.shared.stopRecording()
-                        isRecordingShortcut = false
-                    } else {
-                        isRecordingShortcut = true
-                        ShortcutRecorder.shared.startRecording { config in
-                            if let config = config {
-                                GlobalShortcutManager.shared.setShortcut(config)
-                            }
-                            isRecordingShortcut = false
+            if !hasAccessibilityPermission {
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .font(.system(size: 10))
+                            .foregroundStyle(.orange)
+                        Text("需要辅助功能权限才能使用全局快捷键")
+                            .font(.caption2)
+                            .foregroundStyle(.orange)
+                        Spacer()
+                        Button("去授权") {
+                            openAccessibilitySettings()
                         }
+                        .buttonStyle(.plain)
+                        .foregroundStyle(Color.accentColor)
+                        .font(.caption2)
                     }
-                }
-                .buttonStyle(.plain)
-                .foregroundStyle(Color.accentColor)
-                .font(.system(size: 13))
 
-                if GlobalShortcutManager.shared.currentShortcut != nil {
-                    Button("清除") {
-                        GlobalShortcutManager.shared.clearShortcut()
-                    }
-                    .buttonStyle(.plain)
-                    .foregroundStyle(.secondary)
-                    .font(.system(size: 13))
+                    Text("进程路径: \(Bundle.main.bundlePath)")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary.opacity(0.7))
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+
+                    Text("提示: 开发者版本请给 Terminal.app 授权，或安装 .app 版本")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary.opacity(0.6))
                 }
+                .padding(.horizontal, 8)
+                .padding(.vertical, 6)
+                .background(Color.orange.opacity(0.08))
+                .cornerRadius(6)
+            } else {
+                HStack(spacing: 6) {
+                    Image(systemName: "checkmark.shield.fill")
+                        .font(.system(size: 10))
+                        .foregroundStyle(.green)
+                    Text("辅助功能权限已授权")
+                        .font(.caption2)
+                        .foregroundStyle(.green)
+                    Spacer()
+                }
+                .padding(.horizontal, 8)
+                .padding(.vertical, 6)
+                .background(Color.green.opacity(0.08))
+                .cornerRadius(6)
             }
 
-            if isRecordingShortcut {
+            ForEach(ShortcutAction.allCases, id: \.self) { action in
+                actionShortcutRow(action)
+            }
+
+            if isRecordingAction != nil {
                 Text("请按下想要的快捷键组合，按 Esc 取消")
                     .font(.caption2)
                     .foregroundStyle(.orange)
-            } else if GlobalShortcutManager.shared.currentShortcut != nil {
-                Text("需要辅助功能权限才能生效")
-                    .font(.caption2)
-                    .foregroundStyle(.secondary.opacity(0.7))
             }
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 10)
         .background(Color.gray.opacity(0.08))
         .cornerRadius(10)
+    }
+
+    private func actionShortcutRow(_ action: ShortcutAction) -> some View {
+        HStack(spacing: 8) {
+            Text(action.displayName)
+                .font(.system(size: 12))
+                .foregroundStyle(.secondary)
+                .frame(width: 110, alignment: .leading)
+
+            Text(GlobalShortcutManager.shared.shortcutDisplay(for: action))
+                .font(.system(size: 12, weight: .medium, design: .monospaced))
+                .padding(.horizontal, 6)
+                .padding(.vertical, 3)
+                .background(isRecordingAction == action ? Color.accentColor.opacity(0.15) : Color.gray.opacity(0.12))
+                .foregroundStyle(isRecordingAction == action ? Color.accentColor : .primary)
+                .cornerRadius(5)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 5)
+                        .stroke(isRecordingAction == action ? Color.accentColor : Color.clear, lineWidth: 1.5)
+                )
+
+            Spacer()
+
+            Button(isRecordingAction == action ? "取消" : "修改") {
+                if isRecordingAction == action {
+                    ShortcutRecorder.shared.stopRecording()
+                    isRecordingAction = nil
+                } else {
+                    isRecordingAction = action
+                    ShortcutRecorder.shared.startRecording { config in
+                        if let config = config {
+                            GlobalShortcutManager.shared.setShortcut(action: action, config: config)
+                        }
+                        isRecordingAction = nil
+                    }
+                }
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(Color.accentColor)
+            .font(.system(size: 12))
+
+            if GlobalShortcutManager.shared.shortcut(for: action) != nil {
+                Button("清除") {
+                    GlobalShortcutManager.shared.clearShortcut(for: action)
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(.secondary)
+                .font(.system(size: 12))
+            }
+        }
     }
 
     private func setLaunchAtLogin(_ enabled: Bool) {
@@ -522,31 +605,103 @@ struct SettingsView: View {
             launchAtLogin = (SMAppService.mainApp.status == .enabled)
         }
     }
+
+    private var obsidianRow: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Text("Obsidian 同步")
+                    .font(.system(size: 14, weight: .medium))
+                Spacer()
+            }
+
+            HStack(spacing: 8) {
+                Text(obsidianVaultPath.isEmpty ? "未选择 Vault" : obsidianVaultPath)
+                    .font(.system(size: 12, design: .monospaced))
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+
+                Spacer()
+
+                Button("选择 Vault") {
+                    selectObsidianVault()
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(Color.accentColor)
+                .font(.system(size: 12))
+            }
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .background(Color.gray.opacity(0.08))
+        .cornerRadius(10)
+    }
+
+    private func selectObsidianVault() {
+        let panel = NSOpenPanel()
+        panel.canChooseFiles = false
+        panel.canChooseDirectories = true
+        panel.allowsMultipleSelection = false
+        panel.message = "选择 Obsidian Vault 文件夹"
+
+        if panel.runModal() == .OK, let url = panel.url {
+            obsidianVaultPath = url.path
+            ObsidianSyncManager.shared.vaultPath = url.path
+        }
+    }
 }
 
 // MARK: - Shortcut Config
+
+enum ShortcutAction: String, Codable, CaseIterable {
+    case togglePopover = "togglePopover"
+    case createStickyNote = "createStickyNote"
+
+    var displayName: String {
+        switch self {
+        case .togglePopover: return "呼出白板"
+        case .createStickyNote: return "新建桌面便签"
+        }
+    }
+
+    var notificationName: Notification.Name {
+        switch self {
+        case .togglePopover: return .toggleQuickNotePopover
+        case .createStickyNote: return .createQuickNoteSticky
+        }
+    }
+}
 
 struct ShortcutConfig: Codable {
     var modifiers: UInt
     var keyCode: UInt16
 }
 
-@MainActor
 class GlobalShortcutManager {
     static let shared = GlobalShortcutManager()
-    private let defaultsKey = "quicknote.shortcut.config"
-    private var monitor: Any?
+    private let defaultsKey = "quicknote.shortcut.bindings"
+    private var runLoopSource: CFRunLoopSource?
+    private var tap: CFMachPort?
 
-    var currentShortcut: ShortcutConfig? {
+    var bindings: [ShortcutAction: ShortcutConfig] {
         get {
             guard let data = UserDefaults.standard.data(forKey: defaultsKey),
-                  let config = try? JSONDecoder().decode(ShortcutConfig.self, from: data)
-            else { return nil }
-            return config
+                  let dict = try? JSONDecoder().decode([String: ShortcutConfig].self, from: data)
+            else { return [:] }
+            var result: [ShortcutAction: ShortcutConfig] = [:]
+            for (key, config) in dict {
+                if let action = ShortcutAction(rawValue: key) {
+                    result[action] = config
+                }
+            }
+            return result
         }
         set {
-            if let config = newValue,
-               let data = try? JSONEncoder().encode(config) {
+            var dict: [String: ShortcutConfig] = [:]
+            for (action, config) in newValue {
+                dict[action.rawValue] = config
+            }
+            if let data = try? JSONEncoder().encode(dict) {
                 UserDefaults.standard.set(data, forKey: defaultsKey)
             } else {
                 UserDefaults.standard.removeObject(forKey: defaultsKey)
@@ -555,8 +710,84 @@ class GlobalShortcutManager {
         }
     }
 
-    var currentShortcutDisplay: String {
-        guard let config = currentShortcut else { return "未设置" }
+    func shortcut(for action: ShortcutAction) -> ShortcutConfig? {
+        bindings[action]
+    }
+
+    func shortcutDisplay(for action: ShortcutAction) -> String {
+        guard let config = bindings[action] else { return "未设置" }
+        return formatShortcut(config)
+    }
+
+    func setShortcut(action: ShortcutAction, config: ShortcutConfig) {
+        var updated = bindings
+        updated[action] = config
+        bindings = updated
+    }
+
+    func clearShortcut(for action: ShortcutAction) {
+        var updated = bindings
+        updated.removeValue(forKey: action)
+        bindings = updated
+    }
+
+    func register() {
+        unregister()
+        guard !bindings.isEmpty else { return }
+
+        let eventMask = CGEventMask(1 << CGEventType.keyDown.rawValue)
+        guard let tap = CGEvent.tapCreate(
+            tap: .cgSessionEventTap,
+            place: .headInsertEventTap,
+            options: .defaultTap,
+            eventsOfInterest: eventMask,
+            callback: { proxy, type, event, refcon in
+                return GlobalShortcutManager.handleEvent(proxy: proxy, type: type, event: event, refcon: refcon)
+            },
+            userInfo: nil
+        ) else {
+            print("CGEventTap 创建失败，请检查辅助功能权限")
+            return
+        }
+
+        self.tap = tap
+        let runLoopSource = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, tap, 0)
+        CFRunLoopAddSource(CFRunLoopGetCurrent(), runLoopSource, .commonModes)
+        self.runLoopSource = runLoopSource
+        CGEvent.tapEnable(tap: tap, enable: true)
+    }
+
+    func unregister() {
+        if let tap = tap {
+            CGEvent.tapEnable(tap: tap, enable: false)
+            self.tap = nil
+        }
+        if let runLoopSource = runLoopSource {
+            CFRunLoopRemoveSource(CFRunLoopGetCurrent(), runLoopSource, .commonModes)
+            self.runLoopSource = nil
+        }
+    }
+
+    private static func handleEvent(proxy: CGEventTapProxy, type: CGEventType, event: CGEvent, refcon: UnsafeMutableRawPointer?) -> Unmanaged<CGEvent>? {
+        guard type == .keyDown else { return Unmanaged.passRetained(event) }
+
+        let keyCode = UInt16(event.getIntegerValueField(.keyboardEventKeycode))
+        let rawFlags = event.flags.rawValue
+        let relevantFlags = rawFlags & (CGEventFlags.maskCommand.rawValue | CGEventFlags.maskAlternate.rawValue | CGEventFlags.maskControl.rawValue | CGEventFlags.maskShift.rawValue)
+
+        for (action, config) in GlobalShortcutManager.shared.bindings {
+            if keyCode == config.keyCode && relevantFlags == UInt64(config.modifiers) {
+                DispatchQueue.main.async {
+                    NotificationCenter.default.post(name: action.notificationName, object: nil)
+                }
+                return nil
+            }
+        }
+
+        return Unmanaged.passRetained(event)
+    }
+
+    private func formatShortcut(_ config: ShortcutConfig) -> String {
         let modifiers = NSEvent.ModifierFlags(rawValue: config.modifiers)
         var parts: [String] = []
         if modifiers.contains(.command) { parts.append("⌘") }
@@ -565,35 +796,6 @@ class GlobalShortcutManager {
         if modifiers.contains(.shift) { parts.append("⇧") }
         parts.append(keyCodeToString(config.keyCode))
         return parts.joined(separator: " + ")
-    }
-
-    func setShortcut(_ config: ShortcutConfig) {
-        currentShortcut = config
-    }
-
-    func clearShortcut() {
-        currentShortcut = nil
-    }
-
-    func register() {
-        unregister()
-        guard let config = currentShortcut else { return }
-        let modifiers = NSEvent.ModifierFlags(rawValue: config.modifiers)
-        let keyCode = config.keyCode
-
-        monitor = NSEvent.addGlobalMonitorForEvents(matching: .keyDown) { event in
-            guard event.keyCode == keyCode else { return }
-            let actual = event.modifierFlags.intersection([.command, .option, .control, .shift])
-            guard actual == modifiers else { return }
-            NotificationCenter.default.post(name: .toggleQuickNotePopover, object: nil)
-        }
-    }
-
-    func unregister() {
-        if let monitor = monitor {
-            NSEvent.removeMonitor(monitor)
-            self.monitor = nil
-        }
     }
 
     private func keyCodeToString(_ keyCode: UInt16) -> String {
@@ -697,7 +899,6 @@ class GlobalShortcutManager {
     }
 }
 
-@MainActor
 class ShortcutRecorder {
     static let shared = ShortcutRecorder()
     private var monitor: Any?
@@ -743,6 +944,7 @@ class ShortcutRecorder {
 
 extension Notification.Name {
     static let toggleQuickNotePopover = Notification.Name("toggleQuickNotePopover")
+    static let createQuickNoteSticky = Notification.Name("createQuickNoteSticky")
 }
 
 struct NoScrollbarScrollView<Content: View>: NSViewRepresentable {

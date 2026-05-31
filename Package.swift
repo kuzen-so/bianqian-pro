@@ -2,14 +2,14 @@
 import PackageDescription
 
 let package = Package(
-    name: "QuickNote",
+    name: "便签 Pro",
     platforms: [.macOS(.v13)],
     products: [
-        .executable(name: "QuickNote", targets: ["QuickNote"])
+        .executable(name: "便签 Pro", targets: ["便签 Pro"])
     ],
     targets: [
         .executableTarget(
-            name: "QuickNote",
+            name: "便签 Pro",
             swiftSettings: [
                 .enableExperimentalFeature("StrictConcurrency")
             ]

@@ -2,7 +2,7 @@
 set -e
 
 APP_NAME="便签 Pro"
-EXEC_NAME="QuickNote"
+EXEC_NAME="便签 Pro"
 BUILD_DIR=".build/release"
 APP_BUNDLE="${APP_NAME}.app"
 

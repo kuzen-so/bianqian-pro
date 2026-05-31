@@ -75,10 +75,20 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             name: .toggleQuickNotePopover,
             object: nil
         )
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(createStickyNoteFromShortcut),
+            name: .createQuickNoteSticky,
+            object: nil
+        )
     }
 
     @objc private func togglePopoverFromShortcut() {
         togglePopover()
+    }
+
+    @objc private func createStickyNoteFromShortcut() {
+        createNewStickyNote()
     }
 
     private func setupStatusBar() {

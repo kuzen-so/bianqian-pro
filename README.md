@@ -18,7 +18,7 @@
 ├── Package.swift              # Swift Package 配置
 ├── README.md
 ├── build_app.sh               # 打包脚本
-└── Sources/QuickNote/
+└── Sources/便签 Pro/
     ├── QuickNote.swift        # 应用入口
     ├── AppDelegate.swift      # 状态栏、Popover、事件监听
     ├── PopoverView.swift      # 白板浮层界面
