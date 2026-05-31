@@ -18,7 +18,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         setupEventMonitor()
         restoreStickyNotes()
         setupGlobalShortcut()
-        setupAppearanceObserver()
     }
 
     private func checkApplicationLocation() {
@@ -203,25 +202,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         for note in noteStore.notes where note.isSticky {
             openStickyNote(note)
         }
-    }
-
-    private func setupAppearanceObserver() {
-        DistributedNotificationCenter.default().addObserver(
-            self,
-            selector: #selector(systemAppearanceChanged),
-            name: .init("AppleInterfaceThemeChangedNotification"),
-            object: nil
-        )
-    }
-
-    @objc private func systemAppearanceChanged() {
-        let defaultColor = systemDefaultColor()
-        for (index, note) in noteStore.notes.enumerated() {
-            var updated = note
-            updated.color = defaultColor
-            noteStore.notes[index] = updated
-        }
-        noteStore.save()
     }
 
     func applicationWillTerminate(_ notification: Notification) {
