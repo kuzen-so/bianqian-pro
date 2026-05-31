@@ -247,6 +247,7 @@ struct StickyNoteView: View {
 
     private var titleBar: some View {
         HStack(spacing: 8) {
+            // 左侧：关闭按钮 + 对称占位圆点
             Button(action: onClose) {
                 Circle()
                     .fill(Color.red.opacity(0.9))
@@ -254,6 +255,11 @@ struct StickyNoteView: View {
             }
             .buttonStyle(.plain)
             .opacity(isHovering ? 1 : 0)
+
+            Circle()
+                .fill(Color.gray.opacity(0.25))
+                .frame(width: 14, height: 14)
+                .opacity(isHovering ? 1 : 0)
 
             Spacer()
 
@@ -264,6 +270,15 @@ struct StickyNoteView: View {
                 .foregroundStyle(.primary)
 
             Spacer()
+
+            // 右侧：同步到 Obsidian + 新建按钮
+            Button(action: syncToObsidian) {
+                Image(systemName: "arrow.up.doc")
+                    .font(.system(size: 13))
+                    .foregroundStyle(.secondary.opacity(0.7))
+            }
+            .buttonStyle(.plain)
+            .opacity(isHovering ? 1 : 0)
 
             Button(action: onCreateNew) {
                 Image(systemName: "plus.circle")
@@ -281,6 +296,10 @@ struct StickyNoteView: View {
                 isHovering = hovering
             }
         }
+    }
+
+    private func syncToObsidian() {
+        ObsidianSyncManager.shared.syncSingleNote(note)
     }
 
     private var contentArea: some View {
