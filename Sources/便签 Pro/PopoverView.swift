@@ -5,7 +5,7 @@ import ApplicationServices
 struct PopoverView: View {
     @ObservedObject var store: NoteStore
     @State private var newNoteText = ""
-    @State private var selectedColor: NoteColor = .white
+    @State private var selectedColor: NoteColor = .gray
     @State private var showColorPicker = false
     @State private var showArchived = false
     @State private var newTagText = ""
