@@ -381,7 +381,9 @@ struct SettingsView: View {
     var body: some View {
         VStack(spacing: 0) {
             header
-            settingsContent
+            ScrollView(.vertical, showsIndicators: false) {
+                settingsContent
+            }
         }
         .onAppear {
             launchAtLogin = (SMAppService.mainApp.status == .enabled)
