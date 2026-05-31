@@ -180,7 +180,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         var newNote = Note(
             content: "",
             createdAt: Date(),
-            color: .yellow,
+            color: .white,
             isSticky: true,
             isArchived: false,
             tags: []
