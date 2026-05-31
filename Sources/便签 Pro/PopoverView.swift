@@ -78,6 +78,7 @@ struct PopoverView: View {
             .padding(.vertical, 6)
             .background(showArchived ? Color.clear : Color.gray.opacity(0.15))
             .cornerRadius(6)
+            .contentShape(Rectangle())
 
             Button("完成") {
                 showArchived = true
@@ -88,6 +89,7 @@ struct PopoverView: View {
             .padding(.vertical, 6)
             .background(showArchived ? Color.gray.opacity(0.15) : Color.clear)
             .cornerRadius(6)
+            .contentShape(Rectangle())
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 4)
