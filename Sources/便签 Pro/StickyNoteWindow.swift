@@ -10,11 +10,11 @@ class StickyNoteWindowController: NSWindowController {
     private var note: Note
     private var store: NoteStore
     private var onClose: () -> Void
-    private var onCreateNew: () -> Void
+    private var onCreateNew: (CGPoint) -> Void
     private var onArchive: () -> Void
     private var expandedSize: CGSize?
 
-    init(note: Note, store: NoteStore, onClose: @escaping () -> Void, onCreateNew: @escaping () -> Void = {}, onArchive: @escaping () -> Void = {}) {
+    init(note: Note, store: NoteStore, onClose: @escaping () -> Void, onCreateNew: @escaping (CGPoint) -> Void = { _ in }, onArchive: @escaping () -> Void = {}) {
         self.note = note
         self.store = store
         self.onClose = onClose
@@ -43,7 +43,8 @@ class StickyNoteWindowController: NSWindowController {
                 self?.closeSticky()
             },
             onCreateNew: { [weak self] in
-                self?.onCreateNew()
+                guard let self = self, let window = self.window else { return }
+                self.onCreateNew(window.frame.origin)
             },
             onArchive: { [weak self] in
                 self?.onArchive()

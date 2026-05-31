@@ -160,8 +160,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                     self.noteStore.update(updated)
                 }
             },
-            onCreateNew: { [weak self] in
-                self?.createNewStickyNote()
+            onCreateNew: { [weak self] origin in
+                self?.createNewStickyNote(near: origin)
             },
             onArchive: { [weak self] in
                 guard let self = self else { return }
@@ -176,8 +176,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         controller.window?.makeKey()
     }
 
-    private func createNewStickyNote() {
-        let newNote = Note(
+    private func createNewStickyNote(near origin: CGPoint? = nil) {
+        var newNote = Note(
             content: "",
             createdAt: Date(),
             color: .yellow,
@@ -185,6 +185,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             isArchived: false,
             tags: []
         )
+        if let origin = origin {
+            newNote.position = CGPoint(x: origin.x + 30, y: origin.y - 30)
+        }
         noteStore.notes.append(newNote)
         noteStore.save()
         openStickyNote(newNote)
