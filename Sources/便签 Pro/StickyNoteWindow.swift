@@ -174,15 +174,20 @@ struct StickyNoteView: View {
     var onCreateNew: () -> Void = {}
     var onArchive: () -> Void = {}
     var onToggleCollapse: ((Bool) -> Void)? = nil
-    @Environment(\.colorScheme) var colorScheme
 
     @State private var isHovering = false
     @State private var isCollapsed = false
     @State private var formatCommand: String? = nil
     @State private var showFormatBar = false
+    @State private var effectiveColorScheme: ColorScheme = .light
 
     private var bgColor: Color {
-        colorScheme == .dark ? Color(white: 0.08).opacity(0.95) : Color.white.opacity(0.90)
+        effectiveColorScheme == .dark ? Color(white: 0.08).opacity(0.95) : Color.white.opacity(0.90)
+    }
+
+    private func updateColorScheme() {
+        let isDark = NSApp.effectiveAppearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
+        effectiveColorScheme = isDark ? .dark : .light
     }
 
     private var titleText: String {
@@ -227,9 +232,9 @@ struct StickyNoteView: View {
                 .strokeBorder(
                     RadialGradient(
                         gradient: Gradient(stops: [
-                            .init(color: Color.white.opacity(colorScheme == .dark ? 0.50 : 0.75), location: 0.0),
-                            .init(color: Color.white.opacity(colorScheme == .dark ? 0.20 : 0.35), location: 0.5),
-                            .init(color: Color.white.opacity(colorScheme == .dark ? 0.04 : 0.08), location: 1.0),
+                            .init(color: Color.white.opacity(effectiveColorScheme == .dark ? 0.50 : 0.75), location: 0.0),
+                            .init(color: Color.white.opacity(effectiveColorScheme == .dark ? 0.20 : 0.35), location: 0.5),
+                            .init(color: Color.white.opacity(effectiveColorScheme == .dark ? 0.04 : 0.08), location: 1.0),
                         ]),
                         center: .center,
                         startRadius: 0,
@@ -243,6 +248,12 @@ struct StickyNoteView: View {
             guard let id = notification.userInfo?["noteId"] as? UUID, id == note.id else { return }
             isCollapsed.toggle()
             onToggleCollapse?(isCollapsed)
+        }
+        .onAppear {
+            updateColorScheme()
+        }
+        .onReceive(DistributedNotificationCenter.default().publisher(for: .init("AppleInterfaceThemeChangedNotification"))) { _ in
+            updateColorScheme()
         }
     }
 
@@ -329,7 +340,7 @@ struct StickyNoteView: View {
         .padding(.vertical, 16)
         .background(
             RoundedRectangle(cornerRadius: 8)
-                .stroke(Color.gray.opacity(colorScheme == .dark ? 0.25 : 0.15), lineWidth: 1)
+                .stroke(Color.gray.opacity(effectiveColorScheme == .dark ? 0.25 : 0.15), lineWidth: 1)
         )
     }
 
