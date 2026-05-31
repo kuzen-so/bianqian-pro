@@ -4,6 +4,7 @@ import ApplicationServices
 
 struct PopoverView: View {
     @ObservedObject var store: NoteStore
+    @Environment(\.colorScheme) var colorScheme
     @State private var newNoteText = ""
     @State private var selectedColor: NoteColor = .gray
     @State private var showColorPicker = false
@@ -31,6 +32,9 @@ struct PopoverView: View {
                     .background(.regularMaterial)
                     .transition(.move(edge: .trailing))
             }
+        }
+        .onAppear {
+            selectedColor = colorScheme == .dark ? .dark : .gray
         }
         .alert("添加标签", isPresented: $showTagAlert) {
             TextField("标签名称", text: $newTagText)

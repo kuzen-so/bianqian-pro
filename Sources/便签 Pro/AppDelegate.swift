@@ -180,7 +180,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         var newNote = Note(
             content: "",
             createdAt: Date(),
-            color: .gray,
+            color: systemDefaultColor(),
             isSticky: true,
             isArchived: false,
             tags: []
@@ -191,6 +191,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         noteStore.notes.append(newNote)
         noteStore.save()
         openStickyNote(newNote)
+    }
+
+    private func systemDefaultColor() -> NoteColor {
+        let isDark = NSApp.effectiveAppearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
+        return isDark ? .dark : .gray
     }
 
     private func restoreStickyNotes() {
