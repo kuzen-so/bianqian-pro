@@ -78,6 +78,10 @@ enum NoteColor: String, Codable, CaseIterable {
     case gray = "#BDBDBD"
     case dark = "#424242"
 
+    static var allCases: [NoteColor] {
+        [.auto, .yellow, .green, .blue, .pink, .purple, .orange]
+    }
+
     var swiftUIColor: Color {
         if self == .auto {
             let isDark = UserDefaults.standard.string(forKey: "AppleInterfaceStyle") == "Dark"

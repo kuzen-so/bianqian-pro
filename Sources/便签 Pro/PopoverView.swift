@@ -294,10 +294,21 @@ struct NoteRow: View {
                         updated.color = color
                         store.update(updated)
                     }) {
-                        Image(systemName: "circle.fill")
-                            .symbolRenderingMode(.palette)
-                            .foregroundStyle(color.swiftUIColor)
-                            .imageScale(.large)
+                        HStack(spacing: 6) {
+                            if color == .auto {
+                                Image(systemName: "circle.dashed")
+                                    .font(.system(size: 14))
+                                    .foregroundStyle(.primary)
+                                    .frame(width: 16, height: 16)
+                            } else {
+                                Image(systemName: "circle.fill")
+                                    .symbolRenderingMode(.palette)
+                                    .foregroundStyle(color.swiftUIColor)
+                                    .imageScale(.large)
+                            }
+                            Text(color.displayName)
+                                .font(.system(size: 12))
+                        }
                     }
                 }
             }
@@ -374,10 +385,21 @@ struct ArchivedNoteRow: View {
                         updated.color = color
                         store.update(updated)
                     }) {
-                        Image(systemName: "circle.fill")
-                            .symbolRenderingMode(.palette)
-                            .foregroundStyle(color.swiftUIColor)
-                            .imageScale(.large)
+                        HStack(spacing: 6) {
+                            if color == .auto {
+                                Image(systemName: "circle.dashed")
+                                    .font(.system(size: 14))
+                                    .foregroundStyle(.primary)
+                                    .frame(width: 16, height: 16)
+                            } else {
+                                Image(systemName: "circle.fill")
+                                    .symbolRenderingMode(.palette)
+                                    .foregroundStyle(color.swiftUIColor)
+                                    .imageScale(.large)
+                            }
+                            Text(color.displayName)
+                                .font(.system(size: 12))
+                        }
                     }
                 }
             }

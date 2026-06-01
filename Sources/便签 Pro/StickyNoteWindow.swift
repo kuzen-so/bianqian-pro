@@ -33,6 +33,7 @@ class StickyNoteWindowController: NSWindowController {
         window.hasShadow = true
         window.level = .floating
         window.collectionBehavior = [.canJoinAllSpaces, .stationary]
+        window.minSize = NSSize(width: 360, height: 360)
 
         super.init(window: window)
 
@@ -117,13 +118,15 @@ class StickyNoteWindowController: NSWindowController {
             if expandedSize == nil {
                 expandedSize = currentFrame.size
             }
-            let collapsedHeight: CGFloat = 46
+            let collapsedHeight: CGFloat = 36
             let newOriginY = currentFrame.origin.y + (currentFrame.size.height - collapsedHeight)
+            window.minSize = NSSize(width: 360, height: 36)
             window.setContentSize(NSSize(width: currentFrame.size.width, height: collapsedHeight))
             window.setFrameOrigin(NSPoint(x: currentFrame.origin.x, y: newOriginY))
         } else {
             let height = expandedSize?.height ?? 400
             let newOriginY = currentFrame.origin.y + (currentFrame.size.height - height)
+            window.minSize = NSSize(width: 360, height: 360)
             window.setContentSize(NSSize(width: currentFrame.size.width, height: height))
             window.setFrameOrigin(NSPoint(x: currentFrame.origin.x, y: newOriginY))
         }
@@ -147,7 +150,7 @@ class StickyNoteWindow: NSWindow {
                     object: nil,
                     userInfo: ["noteId": noteId as Any]
                 )
-                return
+                break
             }
             if isInTitleBar(event) {
                 initialDragLocation = NSEvent.mouseLocation
@@ -183,8 +186,9 @@ class StickyNoteWindow: NSWindow {
 
     private func isInTitleBar(_ event: NSEvent) -> Bool {
         let location = event.locationInWindow
-        let effectiveHeight = min(frame.height, titleBarHeight)
-        return location.y > frame.height - effectiveHeight
+        let height = contentView?.bounds.height ?? frame.height
+        let effectiveHeight = min(height, titleBarHeight)
+        return location.y > height - effectiveHeight
     }
 }
 
@@ -211,11 +215,11 @@ struct StickyNoteView: View {
     }
 
     private var bgColor: Color {
-        if colorScheme == .dark && (note.color == .white || note.color == .auto) {
-            return Color(white: 0.12).opacity(0.88)
+        if colorScheme == .dark && note.color == .auto {
+            return Color(white: 0.12).opacity(0.6)
         }
         // 底层有 NSVisualEffectView 提供毛玻璃模糊，降低不透明度让模糊透过来
-        return resolvedNoteColor.opacity(0.88)
+        return resolvedNoteColor.opacity(0.6)
     }
 
     private var titleText: String {
@@ -243,6 +247,7 @@ struct StickyNoteView: View {
                 footerBar
             }
         }
+        .frame(maxHeight: .infinity, alignment: .top)
         .onChange(of: formatCommand) { newValue in
             if newValue != nil {
                 withAnimation(.easeInOut(duration: 0.15)) {
@@ -268,10 +273,13 @@ struct StickyNoteView: View {
             .buttonStyle(.plain)
             .opacity(isHovering ? 1 : 0)
 
-            Circle()
-                .fill(Color.gray.opacity(0.25))
-                .frame(width: 14, height: 14)
-                .opacity(isHovering ? 1 : 0)
+            Button(action: changeColor) {
+                Circle()
+                    .fill(note.color.swiftUIColor)
+                    .frame(width: 14, height: 14)
+            }
+            .buttonStyle(.plain)
+            .opacity(isHovering ? 1 : 0)
 
             Spacer()
 

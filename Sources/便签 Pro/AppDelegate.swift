@@ -194,8 +194,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func systemDefaultColor() -> NoteColor {
-        let isDark = UserDefaults.standard.string(forKey: "AppleInterfaceStyle") == "Dark"
-        return isDark ? .dark : .gray
+        .auto
     }
 
     private func restoreStickyNotes() {
