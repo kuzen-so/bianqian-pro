@@ -30,7 +30,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         else { return }
 
         let alert = NSAlert()
-        alert.messageText = "Move QuickNote to Applications folder?"
+        alert.messageText = "将 便签 Pro 移动到 Applications 文件夹？"
         alert.informativeText = "移动到 /Applications 后可正常使用开机自启动等功能。"
         alert.alertStyle = .informational
         alert.addButton(withTitle: "移动")
@@ -42,7 +42,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func moveToApplications() {
-        let appName = "QuickNote.app"
+        let appName = "便签 Pro.app"
         let sourceURL = Bundle.main.bundleURL
         let destinationURL = URL(fileURLWithPath: "/Applications/\(appName)")
 
@@ -54,7 +54,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
             let alert = NSAlert()
             alert.messageText = "移动成功"
-            alert.informativeText = "QuickNote has been moved to /Applications. Please reopen it from Launchpad or the Applications folder."
+            alert.informativeText = "便签 Pro 已移动到 /Applications，请从启动台或 Applications 文件夹重新打开。"
             alert.runModal()
 
             NSApp.terminate(nil)
@@ -97,7 +97,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         if let button = statusItem.button {
             button.image = NSImage(
                 systemSymbolName: "square.and.pencil",
-                accessibilityDescription: "QuickNote"
+                accessibilityDescription: "便签 Pro"
             )
             button.action = #selector(togglePopover)
             button.target = self
@@ -194,7 +194,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func systemDefaultColor() -> NoteColor {
-        systemDefaultNoteColor()
+        let isDark = UserDefaults.standard.string(forKey: "AppleInterfaceStyle") == "Dark"
+        return isDark ? .dark : .gray
     }
 
     private func restoreStickyNotes() {

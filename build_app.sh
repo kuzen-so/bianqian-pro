@@ -1,8 +1,8 @@
 #!/bin/zsh
 set -e
 
-APP_NAME="QuickNote"
-EXEC_NAME="QuickNote"
+APP_NAME="便签 Pro"
+EXEC_NAME="便签 Pro"
 BUILD_DIR=".build/release"
 APP_BUNDLE="${APP_NAME}.app"
 
@@ -88,9 +88,6 @@ SWIFT_EOF
 
 iconutil -c icns "${ICONSET}" -o "${APP_BUNDLE}/Contents/Resources/AppIcon.icns" 2>/dev/null || true
 rm -rf "${ICONSET}"
-
-echo "🔏 Signing app bundle..."
-codesign --force --deep --sign - "${APP_BUNDLE}"
 
 echo "✅ Done! ${APP_BUNDLE} is ready."
 echo ""

@@ -78,12 +78,9 @@ enum NoteColor: String, Codable, CaseIterable {
     case gray = "#BDBDBD"
     case dark = "#424242"
 
-    /// 解析为 SwiftUI Color。对于 `.auto` 会根据当前系统模式返回和谐的浅色/深色。
     var swiftUIColor: Color {
         if self == .auto {
             let isDark = UserDefaults.standard.string(forKey: "AppleInterfaceStyle") == "Dark"
-            // 浅色模式：稍暗的浅灰，避免融入白色背景
-            // 深色模式：较深的灰色，避免在深色背景下刺眼
             return isDark ? Color(white: 0.20) : Color(white: 0.90)
         }
         return Color(hex: self.rawValue) ?? .white

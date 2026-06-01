@@ -36,6 +36,21 @@ class StickyNoteWindowController: NSWindowController {
 
         super.init(window: window)
 
+        // 容器视图统一负责圆角裁剪
+        let containerView = NSView(frame: window.contentView?.bounds ?? .zero)
+        containerView.wantsLayer = true
+        containerView.layer?.cornerRadius = 10
+        containerView.layer?.masksToBounds = true
+        containerView.autoresizingMask = [.width, .height]
+
+        // 底层毛玻璃模糊
+        let visualEffectView = NSVisualEffectView(frame: containerView.bounds)
+        visualEffectView.material = .popover
+        visualEffectView.blendingMode = .behindWindow
+        visualEffectView.state = .active
+        visualEffectView.autoresizingMask = [.width, .height]
+
+        // SwiftUI 内容层
         let hostingView = NSHostingView(rootView: StickyNoteView(
             note: note,
             store: store,
@@ -53,8 +68,12 @@ class StickyNoteWindowController: NSWindowController {
                 self?.toggleCollapse(collapsed)
             }
         ))
+        hostingView.frame = containerView.bounds
+        hostingView.autoresizingMask = [.width, .height]
 
-        window.contentView = hostingView
+        containerView.addSubview(visualEffectView)
+        containerView.addSubview(hostingView)
+        window.contentView = containerView
         window.noteId = note.id
 
         if let pos = note.position {
@@ -81,13 +100,11 @@ class StickyNoteWindowController: NSWindowController {
 
     func savePosition() {
         guard let window = self.window else { return }
-        // 从 store 取最新 note，避免用本地旧副本覆盖已编辑的内容
         guard var updated = store.notes.first(where: { $0.id == note.id }) else { return }
         updated.position = CGPoint(x: window.frame.origin.x, y: window.frame.origin.y)
         updated.size = CGSize(width: window.frame.size.width, height: window.frame.size.height)
         store.update(updated)
 
-        // 同步更新展开尺寸，避免折叠后再展开时尺寸回退
         if window.frame.size.height > 50 {
             expandedSize = window.frame.size
         }
@@ -95,15 +112,20 @@ class StickyNoteWindowController: NSWindowController {
 
     private func toggleCollapse(_ collapsed: Bool) {
         guard let window = self.window else { return }
+        let currentFrame = window.frame
         if collapsed {
             if expandedSize == nil {
-                expandedSize = window.frame.size
+                expandedSize = currentFrame.size
             }
             let collapsedHeight: CGFloat = 46
-            window.setContentSize(NSSize(width: window.frame.size.width, height: collapsedHeight))
+            let newOriginY = currentFrame.origin.y + (currentFrame.size.height - collapsedHeight)
+            window.setContentSize(NSSize(width: currentFrame.size.width, height: collapsedHeight))
+            window.setFrameOrigin(NSPoint(x: currentFrame.origin.x, y: newOriginY))
         } else {
             let height = expandedSize?.height ?? 400
-            window.setContentSize(NSSize(width: window.frame.size.width, height: height))
+            let newOriginY = currentFrame.origin.y + (currentFrame.size.height - height)
+            window.setContentSize(NSSize(width: currentFrame.size.width, height: height))
+            window.setFrameOrigin(NSPoint(x: currentFrame.origin.x, y: newOriginY))
         }
     }
 }
@@ -161,7 +183,6 @@ class StickyNoteWindow: NSWindow {
 
     private func isInTitleBar(_ event: NSEvent) -> Bool {
         let location = event.locationInWindow
-        // 当窗口接近折叠高度时，整个窗口都视为标题栏（可拖拽/可双击展开）
         let effectiveHeight = min(frame.height, titleBarHeight)
         return location.y > frame.height - effectiveHeight
     }
@@ -184,8 +205,6 @@ struct StickyNoteView: View {
     /// 解析当前便签的实际背景色。`.auto` 会跟随系统模式实时变化。
     private var resolvedNoteColor: Color {
         if note.color == .auto {
-            // 浅色：稍暗的浅灰，避免融入白色背景
-            // 深色：较深的灰色，避免在深色背景下刺眼
             return colorScheme == .dark ? Color(white: 0.20) : Color(white: 0.90)
         }
         return note.color.swiftUIColor
@@ -193,10 +212,10 @@ struct StickyNoteView: View {
 
     private var bgColor: Color {
         if colorScheme == .dark && (note.color == .white || note.color == .auto) {
-            // 深色模式下白色 / 自动 使用深色背景，避免刺眼
-            return Color(white: 0.12).opacity(0.95)
+            return Color(white: 0.12).opacity(0.88)
         }
-        return resolvedNoteColor.opacity(0.95)
+        // 底层有 NSVisualEffectView 提供毛玻璃模糊，降低不透明度让模糊透过来
+        return resolvedNoteColor.opacity(0.88)
     }
 
     private var titleText: String {
@@ -232,24 +251,6 @@ struct StickyNoteView: View {
             }
         }
         .background(bgColor)
-        .clipShape(RoundedRectangle(cornerRadius: 10))
-        .overlay(
-            RoundedRectangle(cornerRadius: 10)
-                .strokeBorder(
-                    RadialGradient(
-                        gradient: Gradient(stops: [
-                            .init(color: Color.white.opacity(0.50), location: 0.0),
-                            .init(color: Color.white.opacity(0.20), location: 0.5),
-                            .init(color: Color.white.opacity(0.04), location: 1.0),
-                        ]),
-                        center: .center,
-                        startRadius: 0,
-                        endRadius: 260
-                    ),
-                    lineWidth: 1.5
-                )
-        )
-        .shadow(color: .black.opacity(0.12), radius: 12, x: 0, y: 4)
         .onReceive(NotificationCenter.default.publisher(for: .stickyNoteDoubleClicked)) { notification in
             guard let id = notification.userInfo?["noteId"] as? UUID, id == note.id else { return }
             isCollapsed.toggle()
@@ -259,7 +260,6 @@ struct StickyNoteView: View {
 
     private var titleBar: some View {
         HStack(spacing: 8) {
-            // 左侧：关闭按钮 + 对称占位圆点
             Button(action: onClose) {
                 Circle()
                     .fill(Color.red.opacity(0.9))
@@ -283,7 +283,6 @@ struct StickyNoteView: View {
 
             Spacer()
 
-            // 右侧：同步到 Obsidian + 新建按钮
             Button(action: syncToObsidian) {
                 Image(systemName: "arrow.up.doc")
                     .font(.system(size: 13))
@@ -337,7 +336,8 @@ struct StickyNoteView: View {
             formatCommand: $formatCommand
         )
         .padding(.horizontal, 14)
-        .padding(.vertical, 16)
+        .padding(.vertical, 12)
+        .padding(.top, 4)
     }
 
     private var footerBar: some View {
@@ -612,7 +612,6 @@ class ConfettiView: NSView {
     private func setupEmitters() {
         let height = bounds.height
 
-        // Left emitter
         leftEmitter.emitterPosition = CGPoint(x: 0, y: height / 2)
         leftEmitter.emitterSize = CGSize(width: 10, height: height * 0.6)
         leftEmitter.emitterMode = .outline
@@ -620,7 +619,6 @@ class ConfettiView: NSView {
         leftEmitter.renderMode = .unordered
         leftEmitter.birthRate = 0
 
-        // Right emitter
         rightEmitter.emitterPosition = CGPoint(x: bounds.width, y: height / 2)
         rightEmitter.emitterSize = CGSize(width: 10, height: height * 0.6)
         rightEmitter.emitterMode = .outline
@@ -647,7 +645,6 @@ class ConfettiView: NSView {
         cell.lifetimeRange = 0.5
         cell.velocity = 600
         cell.velocityRange = 100
-        // macOS CAEmitterLayer angle mapping: 0=down, π/2=right, π=up, 3π/2=left
         cell.emissionLongitude = direction == .right ? .pi / 2 : -.pi / 2
         cell.emissionRange = .pi / 12
         cell.spin = 8

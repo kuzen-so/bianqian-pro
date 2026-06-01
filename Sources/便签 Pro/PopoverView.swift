@@ -24,12 +24,12 @@ struct PopoverView: View {
                 inputArea
             }
             .frame(width: 400, height: 400)
-            .background(colorScheme == .dark ? Color(white: 0.11) : Color.white)
+            .background(.regularMaterial)
 
             if showSettings {
                 SettingsView(store: store, onClose: { showSettings = false })
                     .frame(width: 400, height: 400)
-                    .background(colorScheme == .dark ? Color(white: 0.11) : Color.white)
+                    .background(.regularMaterial)
                     .transition(.move(edge: .trailing))
             }
         }
@@ -50,7 +50,7 @@ struct PopoverView: View {
 
     private var headerView: some View {
         HStack {
-            Text("QuickNote")
+            Text("便签 Pro")
                 .font(.headline)
                 .foregroundStyle(.primary)
             Spacer()
@@ -64,7 +64,7 @@ struct PopoverView: View {
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
-        .background(colorScheme == .dark ? Color(white: 0.14) : Color.white)
+        .background(.ultraThinMaterial)
     }
 
     private var tabSwitcher: some View {
@@ -94,17 +94,45 @@ struct PopoverView: View {
     }
 
     private var inputArea: some View {
-        ReturnToSubmitTextEditor(text: $newNoteText, onSubmit: addNote)
-            .frame(height: 80)
-            .padding(8)
-            .background(Color.gray.opacity(0.08))
-            .cornerRadius(10)
-            .overlay(
-                RoundedRectangle(cornerRadius: 10)
-                    .stroke(Color.gray.opacity(0.15), lineWidth: 1)
-            )
-            .padding(.horizontal, 16)
-            .padding(.vertical, 12)
+        VStack(spacing: 8) {
+            ReturnToSubmitTextEditor(text: $newNoteText, onSubmit: addNote)
+                .frame(height: 60)
+                .padding(8)
+                .background(Color.gray.opacity(0.08))
+                .cornerRadius(10)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 10)
+                        .stroke(Color.gray.opacity(0.15), lineWidth: 1)
+                )
+
+            HStack(spacing: 8) {
+                Button(action: addNote) {
+                    Text("添加便签")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundStyle(.primary)
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 5)
+                        .background(Color.accentColor.opacity(0.12))
+                        .cornerRadius(6)
+                }
+                .buttonStyle(.plain)
+
+                Spacer()
+
+                Button(action: createStickyNote) {
+                    Text("显示便签")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundStyle(.primary)
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 5)
+                        .background(Color.orange.opacity(0.15))
+                        .cornerRadius(6)
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
     }
 
     private var noteList: some View {
@@ -197,25 +225,9 @@ struct NoteRow: View {
     var onPinToDesktop: () -> Void
     var onAddTag: () -> Void
     @State private var isHovering = false
-    @Environment(\.colorScheme) var colorScheme
 
     private var dateText: String {
         note.createdAt.formatted(date: .numeric, time: .shortened)
-    }
-
-    /// 根据当前系统模式解析 `.auto` 颜色
-    private var resolvedRowColor: Color {
-        if note.color == .auto {
-            // 浅色：稍暗的浅灰，避免融入白色背景
-            // 深色：较深的灰色，避免在深色背景下刺眼
-            return colorScheme == .dark ? Color(white: 0.30) : Color(white: 0.90)
-        }
-        return note.color.swiftUIColor
-    }
-
-    /// `.auto` 在白板中使用稍高的透明度，确保在两种模式下都清晰可见
-    private var rowBackgroundOpacity: Double {
-        note.color == .auto ? 0.75 : (note.isPinned ? 0.5 : 0.4)
     }
 
     var body: some View {
@@ -259,7 +271,7 @@ struct NoteRow: View {
         }
         .padding(.vertical, 6)
         .padding(.horizontal, 8)
-        .background(resolvedRowColor.opacity(rowBackgroundOpacity))
+        .background(note.color.swiftUIColor.opacity(note.isPinned ? 0.5 : 0.4))
         .cornerRadius(8)
         .onTapGesture(count: 2) {
             onPinToDesktop()
@@ -282,14 +294,10 @@ struct NoteRow: View {
                         updated.color = color
                         store.update(updated)
                     }) {
-                        HStack {
-                            Image(systemName: color == .auto ? "circle.dashed" : "circle.fill")
-                                .symbolRenderingMode(.palette)
-                                .foregroundStyle(color.swiftUIColor)
-                                .imageScale(.large)
-                            Text(color.displayName)
-                                .font(.system(size: 12))
-                        }
+                        Image(systemName: "circle.fill")
+                            .symbolRenderingMode(.palette)
+                            .foregroundStyle(color.swiftUIColor)
+                            .imageScale(.large)
                     }
                 }
             }
@@ -312,23 +320,9 @@ struct ArchivedNoteRow: View {
     @ObservedObject var store: NoteStore
     var onRestore: () -> Void
     var onAddTag: () -> Void
-    @Environment(\.colorScheme) var colorScheme
 
     private var dateText: String {
         note.createdAt.formatted(date: .numeric, time: .shortened)
-    }
-
-    private var resolvedRowColor: Color {
-        if note.color == .auto {
-            // 浅色：稍暗的浅灰，避免融入白色背景
-            // 深色：较深的灰色，避免在深色背景下刺眼
-            return colorScheme == .dark ? Color(white: 0.30) : Color(white: 0.90)
-        }
-        return note.color.swiftUIColor
-    }
-
-    private var archivedRowBackgroundOpacity: Double {
-        note.color == .auto ? 0.50 : 0.25
     }
 
     var body: some View {
@@ -364,7 +358,7 @@ struct ArchivedNoteRow: View {
         }
         .padding(.vertical, 6)
         .padding(.horizontal, 8)
-        .background(resolvedRowColor.opacity(archivedRowBackgroundOpacity))
+        .background(note.color.swiftUIColor.opacity(0.25))
         .cornerRadius(8)
         .onTapGesture(count: 2) {
             onRestore()
@@ -380,14 +374,10 @@ struct ArchivedNoteRow: View {
                         updated.color = color
                         store.update(updated)
                     }) {
-                        HStack {
-                            Image(systemName: color == .auto ? "circle.dashed" : "circle.fill")
-                                .symbolRenderingMode(.palette)
-                                .foregroundStyle(color.swiftUIColor)
-                                .imageScale(.large)
-                            Text(color.displayName)
-                                .font(.system(size: 12))
-                        }
+                        Image(systemName: "circle.fill")
+                            .symbolRenderingMode(.palette)
+                            .foregroundStyle(color.swiftUIColor)
+                            .imageScale(.large)
                     }
                 }
             }
@@ -410,7 +400,6 @@ struct ArchivedNoteRow: View {
 struct SettingsView: View {
     @ObservedObject var store: NoteStore
     var onClose: () -> Void
-    @Environment(\.colorScheme) var colorScheme
     @State private var launchAtLogin = false
     @State private var isRecordingAction: ShortcutAction? = nil
     @State private var hasAccessibilityPermission = false
@@ -479,7 +468,7 @@ struct SettingsView: View {
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
-        .background(colorScheme == .dark ? Color(white: 0.14) : Color.white)
+        .background(.ultraThinMaterial)
     }
 
     private var settingsContent: some View {
@@ -524,7 +513,7 @@ struct SettingsView: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text("开机自启动")
                     .font(.system(size: 14, weight: .medium))
-                Text("Launch QuickNote automatically at login")
+                Text("登录系统时自动运行 便签 Pro")
                     .font(.caption2)
                     .foregroundStyle(.secondary)
             }
@@ -619,39 +608,48 @@ struct SettingsView: View {
             Text(action.displayName)
                 .font(.system(size: 12))
                 .foregroundStyle(.secondary)
+                .frame(width: 110, alignment: .leading)
+
+            Text(GlobalShortcutManager.shared.shortcutDisplay(for: action))
+                .font(.system(size: 12, weight: .medium, design: .monospaced))
+                .padding(.horizontal, 6)
+                .padding(.vertical, 3)
+                .background(isRecordingAction == action ? Color.accentColor.opacity(0.15) : Color.gray.opacity(0.12))
+                .foregroundStyle(isRecordingAction == action ? Color.accentColor : .primary)
+                .cornerRadius(5)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 5)
+                        .stroke(isRecordingAction == action ? Color.accentColor : Color.clear, lineWidth: 1.5)
+                )
 
             Spacer()
 
-            Text(isRecordingAction == action ? "请按下快捷键…" : GlobalShortcutManager.shared.shortcutDisplay(for: action))
-                .font(.system(size: 12, weight: .medium, design: .monospaced))
-                .padding(.horizontal, 10)
-                .padding(.vertical, 5)
-                .background(isRecordingAction == action ? Color.accentColor.opacity(0.15) : Color.gray.opacity(0.12))
-                .foregroundStyle(isRecordingAction == action ? Color.accentColor : .primary)
-                .cornerRadius(6)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 6)
-                        .stroke(isRecordingAction == action ? Color.accentColor : Color.gray.opacity(0.2), lineWidth: 1)
-                )
-                .contentShape(Rectangle())
-                .onTapGesture {
-                    if isRecordingAction == action {
-                        ShortcutRecorder.shared.stopRecording()
+            Button(isRecordingAction == action ? "取消" : "修改") {
+                if isRecordingAction == action {
+                    ShortcutRecorder.shared.stopRecording()
+                    isRecordingAction = nil
+                } else {
+                    isRecordingAction = action
+                    ShortcutRecorder.shared.startRecording { config in
+                        if let config = config {
+                            GlobalShortcutManager.shared.setShortcut(action: action, config: config)
+                        }
                         isRecordingAction = nil
-                    } else {
-                        // 如果正在录制其他快捷键，先停止
-                        if isRecordingAction != nil {
-                            ShortcutRecorder.shared.stopRecording()
-                        }
-                        isRecordingAction = action
-                        ShortcutRecorder.shared.startRecording { config in
-                            if let config = config {
-                                GlobalShortcutManager.shared.setShortcut(action: action, config: config)
-                            }
-                            isRecordingAction = nil
-                        }
                     }
                 }
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(Color.accentColor)
+            .font(.system(size: 12))
+
+            if GlobalShortcutManager.shared.shortcut(for: action) != nil {
+                Button("清除") {
+                    GlobalShortcutManager.shared.clearShortcut(for: action)
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(.secondary)
+                .font(.system(size: 12))
+            }
         }
     }
 
@@ -721,7 +719,7 @@ enum ShortcutAction: String, Codable, CaseIterable {
 
     var displayName: String {
         switch self {
-        case .togglePopover: return "切换白板"
+        case .togglePopover: return "呼出白板"
         case .createStickyNote: return "新建桌面便签"
         }
     }
