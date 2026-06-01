@@ -630,12 +630,13 @@ struct SettingsView: View {
             Text(action.displayName)
                 .font(.system(size: 12))
                 .foregroundStyle(.secondary)
-                .frame(width: 110, alignment: .leading)
+
+            Spacer()
 
             Text(GlobalShortcutManager.shared.shortcutDisplay(for: action))
                 .font(.system(size: 12, weight: .medium, design: .monospaced))
-                .padding(.horizontal, 6)
-                .padding(.vertical, 3)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
                 .background(isRecordingAction == action ? Color.accentColor.opacity(0.15) : Color.gray.opacity(0.12))
                 .foregroundStyle(isRecordingAction == action ? Color.accentColor : .primary)
                 .cornerRadius(5)
@@ -643,35 +644,20 @@ struct SettingsView: View {
                     RoundedRectangle(cornerRadius: 5)
                         .stroke(isRecordingAction == action ? Color.accentColor : Color.clear, lineWidth: 1.5)
                 )
-
-            Spacer()
-
-            Button(isRecordingAction == action ? "取消" : "修改") {
-                if isRecordingAction == action {
-                    ShortcutRecorder.shared.stopRecording()
-                    isRecordingAction = nil
-                } else {
-                    isRecordingAction = action
-                    ShortcutRecorder.shared.startRecording { config in
-                        if let config = config {
-                            GlobalShortcutManager.shared.setShortcut(action: action, config: config)
-                        }
+                .onTapGesture {
+                    if isRecordingAction == action {
+                        ShortcutRecorder.shared.stopRecording()
                         isRecordingAction = nil
+                    } else {
+                        isRecordingAction = action
+                        ShortcutRecorder.shared.startRecording { config in
+                            if let config = config {
+                                GlobalShortcutManager.shared.setShortcut(action: action, config: config)
+                            }
+                            isRecordingAction = nil
+                        }
                     }
                 }
-            }
-            .buttonStyle(.plain)
-            .foregroundStyle(Color.accentColor)
-            .font(.system(size: 12))
-
-            if GlobalShortcutManager.shared.shortcut(for: action) != nil {
-                Button("清除") {
-                    GlobalShortcutManager.shared.clearShortcut(for: action)
-                }
-                .buttonStyle(.plain)
-                .foregroundStyle(.secondary)
-                .font(.system(size: 12))
-            }
         }
     }
 
