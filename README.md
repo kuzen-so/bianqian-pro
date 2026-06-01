@@ -1,74 +1,74 @@
-# 便签 Pro 📝
+# QuickNote 📝
 
-一个轻量级的 macOS 菜单栏便签应用。点击状态栏图标弹出白板记录灵感，也可以将便签贴在桌面上随时查看。
+A lightweight macOS menu-bar sticky notes app. Click the status bar icon to pop up a whiteboard for quick thoughts, or pin notes to the desktop for easy access.
 
-## 功能特性
+## Features
 
-- **菜单栏白板**：点击状态栏图标，弹出浮层白板，快速记录想法
-- **桌面便签**：将任何笔记一键转为桌面便签，悬浮在所有空间上方
-- **多彩主题**：8 种颜色可选，让不同笔记一目了然
-- **位置记忆**：便签的位置和大小会自动保存，重启后恢复
-- **数据持久化**：所有笔记自动保存在本地，无需担心丢失
-- **极简交互**：无 Dock 图标，纯菜单栏应用，不打扰工作流
+- **Menu Bar Whiteboard**: Click the status bar icon to pop up a floating whiteboard and quickly capture ideas
+- **Desktop Sticky Notes**: Convert any note to a desktop sticky note that floats above all Spaces
+- **Colorful Themes**: 8 colors available to differentiate notes at a glance
+- **Position Memory**: Sticky note positions and sizes are automatically saved and restored after restart
+- **Data Persistence**: All notes are saved locally automatically, no worry about losing data
+- **Minimal Interaction**: No Dock icon, pure menu bar app that doesn't disturb your workflow
 
-## 项目结构
+## Project Structure
 
 ```
-便签 Pro/
-├── Package.swift              # Swift Package 配置
+QuickNote/
+├── Package.swift              # Swift Package configuration
 ├── README.md
-├── build_app.sh               # 打包脚本
-└── Sources/便签 Pro/
-    ├── QuickNote.swift        # 应用入口
-    ├── AppDelegate.swift      # 状态栏、Popover、事件监听
-    ├── PopoverView.swift      # 白板浮层界面
-    ├── StickyNoteWindow.swift # 桌面便签窗口
-    ├── NoteModel.swift        # 数据模型
-    └── NoteStore.swift        # 数据存储
+├── build_app.sh               # Build script
+└── Sources/QuickNote/
+    ├── QuickNote.swift        # App entry point
+    ├── AppDelegate.swift      # Status bar, Popover, event monitor
+    ├── PopoverView.swift      # Whiteboard popover UI
+    ├── StickyNoteWindow.swift # Desktop sticky note window
+    ├── NoteModel.swift        # Data model
+    └── NoteStore.swift        # Data storage
 ```
 
-## 运行方式
+## Getting Started
 
-### 开发调试
+### Development
 
 ```bash
-cd 便签 Pro
+cd QuickNote
 swift run
 ```
 
-应用会以 accessory 模式启动，状态栏会出现一个 ✏️ 图标。
+The app launches in accessory mode with a ✏️ icon in the status bar.
 
-### 打包成 .app
+### Build as .app
 
 ```bash
-cd 便签 Pro
+cd QuickNote
 ./build_app.sh
 ```
 
-打包完成后，会在当前目录生成 `便签 Pro.app`，可以拖到 `/Applications` 中使用。
+After building, `QuickNote.app` will be generated in the current directory. Drag it to `/Applications` to install.
 
-## 使用说明
+## Usage
 
-| 操作 | 说明 |
-|------|------|
-| 点击状态栏图标 | 打开/关闭白板浮层 |
-| 输入内容 + 点击「记录」 | 保存到白板列表 |
-| 输入内容 + 点击「创建便签」 | 直接生成桌面便签 |
-| 悬停笔记 → 点击 📌 | 将已有笔记转为桌面便签 |
-| 悬停便签标题栏 | 显示关闭/编辑/换色按钮 |
-| 拖动便签 | 随意调整位置 |
+| Action | Description |
+|--------|-------------|
+| Click status bar icon | Open/close the whiteboard popover |
+| Type content + click "Record" | Save to the whiteboard list |
+| Type content + click "Create Sticky" | Create a desktop sticky note directly |
+| Hover over a note → click 📌 | Convert an existing note to a desktop sticky |
+| Hover over sticky title bar | Show close/edit/color buttons |
+| Drag a sticky note | Freely adjust position |
 
-## 技术栈
+## Tech Stack
 
 - **Swift 5.9+**
-- **SwiftUI** — 界面构建
-- **AppKit** — 状态栏、无框窗口、拖拽
-- **UserDefaults** — 本地数据持久化
+- **SwiftUI** — UI building
+- **AppKit** — Status bar, borderless windows, drag & drop
+- **UserDefaults** — Local data persistence
 
-## 系统要求
+## Requirements
 
 - macOS 13.0+
 
-## 许可证
+## License
 
 MIT

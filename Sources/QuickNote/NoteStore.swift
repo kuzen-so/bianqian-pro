@@ -123,7 +123,7 @@ class ObsidianSyncManager {
 
         var mdContent = "---\n"
         mdContent += "date: \(ISO8601DateFormatter().string(from: note.createdAt))\n"
-        mdContent += "source: 便签 Pro\n"
+        mdContent += "source: QuickNote\n"
         if !note.tags.isEmpty {
             mdContent += "tags: [\(note.tags.joined(separator: ", "))]\n"
         }
@@ -168,7 +168,7 @@ class ObsidianSyncManager {
             // 添加元数据 Frontmatter
             mdContent = "---\n"
             mdContent += "date: \(ISO8601DateFormatter().string(from: note.createdAt))\n"
-            mdContent += "source: 便签 Pro\n"
+            mdContent += "source: QuickNote\n"
             if !note.tags.isEmpty {
                 mdContent += "tags: [\(note.tags.joined(separator: ", "))]\n"
             }

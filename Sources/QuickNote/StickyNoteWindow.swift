@@ -179,15 +179,24 @@ struct StickyNoteView: View {
     @State private var isCollapsed = false
     @State private var formatCommand: String? = nil
     @State private var showFormatBar = false
-    @State private var effectiveColorScheme: ColorScheme = .light
+    @Environment(\.colorScheme) var colorScheme
 
-    private var bgColor: Color {
-        effectiveColorScheme == .dark ? Color(white: 0.08).opacity(0.95) : Color.white.opacity(0.90)
+    /// 解析当前便签的实际背景色。`.auto` 会跟随系统模式实时变化。
+    private var resolvedNoteColor: Color {
+        if note.color == .auto {
+            // 浅色：稍暗的浅灰，避免融入白色背景
+            // 深色：较深的灰色，避免在深色背景下刺眼
+            return colorScheme == .dark ? Color(white: 0.20) : Color(white: 0.90)
+        }
+        return note.color.swiftUIColor
     }
 
-    private func updateColorScheme() {
-        let isDark = UserDefaults.standard.string(forKey: "AppleInterfaceStyle") == "Dark"
-        effectiveColorScheme = isDark ? .dark : .light
+    private var bgColor: Color {
+        if colorScheme == .dark && (note.color == .white || note.color == .auto) {
+            // 深色模式下白色 / 自动 使用深色背景，避免刺眼
+            return Color(white: 0.12).opacity(0.95)
+        }
+        return resolvedNoteColor.opacity(0.95)
     }
 
     private var titleText: String {
@@ -197,7 +206,7 @@ struct StickyNoteView: View {
         if let first = lines.first, !first.isEmpty {
             text = String(first)
         } else {
-            text = "新便签"
+            text = "New Note"
         }
         if text.count > 24 {
             let index = text.index(text.startIndex, offsetBy: 24)
@@ -210,9 +219,6 @@ struct StickyNoteView: View {
         VStack(spacing: 0) {
             titleBar
             if !isCollapsed {
-                Rectangle()
-                    .fill(Color.gray.opacity(0.25))
-                    .frame(height: 0.5)
                 contentArea
                 Spacer(minLength: 0)
                 footerBar
@@ -232,9 +238,9 @@ struct StickyNoteView: View {
                 .strokeBorder(
                     RadialGradient(
                         gradient: Gradient(stops: [
-                            .init(color: Color.white.opacity(effectiveColorScheme == .dark ? 0.50 : 0.75), location: 0.0),
-                            .init(color: Color.white.opacity(effectiveColorScheme == .dark ? 0.20 : 0.35), location: 0.5),
-                            .init(color: Color.white.opacity(effectiveColorScheme == .dark ? 0.04 : 0.08), location: 1.0),
+                            .init(color: Color.white.opacity(0.50), location: 0.0),
+                            .init(color: Color.white.opacity(0.20), location: 0.5),
+                            .init(color: Color.white.opacity(0.04), location: 1.0),
                         ]),
                         center: .center,
                         startRadius: 0,
@@ -248,12 +254,6 @@ struct StickyNoteView: View {
             guard let id = notification.userInfo?["noteId"] as? UUID, id == note.id else { return }
             isCollapsed.toggle()
             onToggleCollapse?(isCollapsed)
-        }
-        .onAppear {
-            updateColorScheme()
-        }
-        .onReceive(DistributedNotificationCenter.default().publisher(for: .init("AppleInterfaceThemeChangedNotification"))) { _ in
-            updateColorScheme()
         }
     }
 
@@ -338,10 +338,6 @@ struct StickyNoteView: View {
         )
         .padding(.horizontal, 14)
         .padding(.vertical, 16)
-        .background(
-            RoundedRectangle(cornerRadius: 8)
-                .stroke(Color.gray.opacity(effectiveColorScheme == .dark ? 0.25 : 0.15), lineWidth: 1)
-        )
     }
 
     private var footerBar: some View {
