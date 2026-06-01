@@ -404,7 +404,7 @@ struct StickyNoteView: View {
             if !showFormatBar {
                 Spacer()
 
-                Text("\(note.content.count) 字")
+                Text("\(note.content.count) characters")
                     .font(.system(size: 11))
                     .foregroundStyle(.secondary.opacity(0.5))
 

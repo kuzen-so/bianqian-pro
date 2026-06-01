@@ -118,7 +118,7 @@ class ObsidianSyncManager {
     private func createNewDocument(note: Note, in vaultURL: URL) {
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "yyyy-MM-dd_HH-mm-ss"
-        let filename = "QuickNote_\(dateFormatter.string(from: note.createdAt)).md"
+        let filename = "便签Pro_\(dateFormatter.string(from: note.createdAt)).md"
         let fileURL = vaultURL.appendingPathComponent(filename)
 
         var mdContent = "---\n"
@@ -140,7 +140,7 @@ class ObsidianSyncManager {
     func sync(notes: [Note]) {
         guard let vaultPath = vaultPath else { return }
         let vaultURL = URL(fileURLWithPath: vaultPath)
-        let syncFolder = vaultURL.appendingPathComponent("QuickNote")
+        let syncFolder = vaultURL.appendingPathComponent("便签Pro")
 
         do {
             try FileManager.default.createDirectory(at: syncFolder, withIntermediateDirectories: true)
