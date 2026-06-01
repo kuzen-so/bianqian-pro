@@ -89,6 +89,9 @@ SWIFT_EOF
 iconutil -c icns "${ICONSET}" -o "${APP_BUNDLE}/Contents/Resources/AppIcon.icns" 2>/dev/null || true
 rm -rf "${ICONSET}"
 
+echo "🔏 Code signing app bundle..."
+codesign --force --deep --sign - "${APP_BUNDLE}" 2>/dev/null || true
+
 echo "✅ Done! ${APP_BUNDLE} is ready."
 echo ""
 echo "You can now:"
