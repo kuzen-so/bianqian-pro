@@ -269,7 +269,7 @@ let iconsetPath = "Assets/AppIcon.iconset"
 
 for size in iconSizes {
     generateAppIcon(size: size, outputPath: "\(iconsetPath)/icon_\(size)x\(size).png")
-    if size <= 256 {
+    if size <= 512 {
         generateAppIcon(size: size * 2, outputPath: "\(iconsetPath)/icon_\(size)x\(size)@2x.png")
     }
 }
