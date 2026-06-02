@@ -268,6 +268,15 @@ struct NoteRow: View {
             }
 
             Spacer()
+
+            Button(action: { store.archive(note) }) {
+                Image(systemName: "checkmark.circle")
+                    .font(.system(size: 16))
+                    .foregroundStyle(.secondary.opacity(isHovering ? 0.8 : 0.3))
+            }
+            .buttonStyle(.plain)
+            .padding(.leading, 4)
+            .frame(maxHeight: .infinity, alignment: .center)
         }
         .padding(.vertical, 6)
         .padding(.horizontal, 8)
@@ -315,12 +324,14 @@ struct NoteRow: View {
             Button("添加标签") {
                 onAddTag()
             }
-            Button("同步到 Obsidian") {
-                ObsidianSyncManager.shared.syncSingleNote(note)
-            }
             Divider()
             Button("删除", role: .destructive) {
                 store.delete(note)
+            }
+        }
+        .onHover { hovering in
+            withAnimation(.easeInOut(duration: 0.15)) {
+                isHovering = hovering
             }
         }
     }
@@ -406,9 +417,6 @@ struct ArchivedNoteRow: View {
             Button("添加标签") {
                 onAddTag()
             }
-            Button("同步到 Obsidian") {
-                ObsidianSyncManager.shared.syncSingleNote(note)
-            }
             Divider()
             Button("删除", role: .destructive) {
                 store.delete(note)
@@ -425,7 +433,6 @@ struct SettingsView: View {
     @State private var launchAtLogin = false
     @State private var isRecordingAction: ShortcutAction? = nil
     @State private var hasAccessibilityPermission = false
-    @State private var obsidianVaultPath: String = ObsidianSyncManager.shared.vaultPath ?? ""
 
     var body: some View {
         VStack(spacing: 0) {
@@ -497,7 +504,6 @@ struct SettingsView: View {
         VStack(spacing: 12) {
             launchAtLoginRow
             shortcutRow
-            obsidianRow
             Spacer()
             quitButton
             versionText
@@ -674,49 +680,6 @@ struct SettingsView: View {
         }
     }
 
-    private var obsidianRow: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack {
-                Text("Obsidian 同步")
-                    .font(.system(size: 14, weight: .medium))
-                Spacer()
-            }
-
-            HStack(spacing: 8) {
-                Text(obsidianVaultPath.isEmpty ? "未选择 Vault" : obsidianVaultPath)
-                    .font(.system(size: 12, design: .monospaced))
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
-                    .truncationMode(.middle)
-
-                Spacer()
-
-                Button("选择 Vault") {
-                    selectObsidianVault()
-                }
-                .buttonStyle(.plain)
-                .foregroundStyle(Color.accentColor)
-                .font(.system(size: 12))
-            }
-        }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 10)
-        .background(Color.gray.opacity(0.08))
-        .cornerRadius(10)
-    }
-
-    private func selectObsidianVault() {
-        let panel = NSOpenPanel()
-        panel.canChooseFiles = false
-        panel.canChooseDirectories = true
-        panel.allowsMultipleSelection = false
-        panel.message = "选择 Obsidian Vault 文件夹"
-
-        if panel.runModal() == .OK, let url = panel.url {
-            obsidianVaultPath = url.path
-            ObsidianSyncManager.shared.vaultPath = url.path
-        }
-    }
 }
 
 // MARK: - Shortcut Config

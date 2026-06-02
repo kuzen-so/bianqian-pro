@@ -291,14 +291,6 @@ struct StickyNoteView: View {
 
             Spacer()
 
-            Button(action: syncToObsidian) {
-                Image(systemName: "arrow.up.doc")
-                    .font(.system(size: 13))
-                    .foregroundStyle(.secondary.opacity(0.7))
-            }
-            .buttonStyle(.plain)
-            .opacity(isHovering ? 1 : 0)
-
             Button(action: onCreateNew) {
                 Image(systemName: "plus.circle")
                     .font(.system(size: 14))
@@ -315,10 +307,6 @@ struct StickyNoteView: View {
                 isHovering = hovering
             }
         }
-    }
-
-    private func syncToObsidian() {
-        ObsidianSyncManager.shared.syncSingleNote(note)
     }
 
     private var contentArea: some View {
