@@ -30,9 +30,9 @@ cat > "${APP_BUNDLE}/Contents/Info.plist" <<EOF
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleShortVersionString</key>
-    <string>1.0.9</string>
+    <string>1.1.0</string>
     <key>CFBundleVersion</key>
-    <string>9</string>
+    <string>10</string>
     <key>LSMinimumSystemVersion</key>
     <string>13.0</string>
     <key>LSUIElement</key>
@@ -43,52 +43,9 @@ cat > "${APP_BUNDLE}/Contents/Info.plist" <<EOF
 </plist>
 EOF
 
-echo "🎨 Creating app icon..."
-ICONSET="icon.iconset"
-mkdir -p "${ICONSET}"
-
-# Generate a simple note icon using sips + built-in tools
-for size in 16 32 128 256 512; do
-    scaled=$((size * 2))
-    touch "${ICONSET}/icon_${size}x${size}.png"
-    touch "${ICONSET}/icon_${size}x${size}@2x.png"
-done
-
-# Use SF Symbol as a fallback icon approach via swift script
-cat > /tmp/gen_icon.swift <<'SWIFT_EOF'
-import AppKit
-
-let sizes = [16, 32, 128, 256, 512]
-let config = NSImage.SymbolConfiguration(pointSize: 512, weight: .regular)
-    .applying(NSImage.SymbolConfiguration(paletteColors: [.systemYellow, .systemOrange]))
-
-for size in sizes {
-    let image = NSImage(systemSymbolName: "square.and.pencil", accessibilityDescription: nil)!
-    let rep = NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: size, pixelsHigh: size, bitsPerSample: 8, samplesPerPixel: 4, hasAlpha: true, isPlanar: false, colorSpaceName: .deviceRGB, bytesPerRow: 0, bitsPerPixel: 0)!
-    NSGraphicsContext.saveGraphicsState()
-    NSGraphicsContext.current = NSGraphicsContext(bitmapImageRep: rep)
-    image.draw(in: NSRect(x: 0, y: 0, width: size, height: size))
-    NSGraphicsContext.restoreGraphicsState()
-    if let data = rep.representation(using: .png, properties: [:]) {
-        try! data.write(to: URL(fileURLWithPath: "icon.iconset/icon_\(size)x\(size).png"))
-    }
-    if size <= 256 {
-        let scaled = size * 2
-        let rep2 = NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: scaled, pixelsHigh: scaled, bitsPerSample: 8, samplesPerPixel: 4, hasAlpha: true, isPlanar: false, colorSpaceName: .deviceRGB, bytesPerRow: 0, bitsPerPixel: 0)!
-        NSGraphicsContext.saveGraphicsState()
-        NSGraphicsContext.current = NSGraphicsContext(bitmapImageRep: rep2)
-        image.draw(in: NSRect(x: 0, y: 0, width: scaled, height: scaled))
-        NSGraphicsContext.restoreGraphicsState()
-        if let data = rep2.representation(using: .png, properties: [:]) {
-            try! data.write(to: URL(fileURLWithPath: "icon.iconset/icon_\(size)x\(size)@2x.png"))
-        }
-    }
-}
-SWIFT_EOF
-swift /tmp/gen_icon.swift
-
-iconutil -c icns "${ICONSET}" -o "${APP_BUNDLE}/Contents/Resources/AppIcon.icns" 2>/dev/null || true
-rm -rf "${ICONSET}"
+echo "🎨 Copying icons..."
+cp "Assets/AppIcon.icns" "${APP_BUNDLE}/Contents/Resources/AppIcon.icns"
+cp "Assets/statusbar_icon.png" "${APP_BUNDLE}/Contents/Resources/statusbar_icon.png"
 
 echo "🔏 Code signing app bundle..."
 codesign --force --deep --sign - "${APP_BUNDLE}" 2>/dev/null || true

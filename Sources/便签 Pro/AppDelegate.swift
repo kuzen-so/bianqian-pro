@@ -92,10 +92,17 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
 
         if let button = statusItem.button {
-            button.image = NSImage(
-                systemSymbolName: "square.and.pencil",
-                accessibilityDescription: "便签 Pro"
-            )
+            let iconPath = Bundle.main.path(forResource: "statusbar_icon", ofType: "png")
+            if let path = iconPath, let image = NSImage(contentsOfFile: path) {
+                image.isTemplate = true
+                image.size = NSSize(width: 18, height: 18)
+                button.image = image
+            } else {
+                button.image = NSImage(
+                    systemSymbolName: "square.and.pencil",
+                    accessibilityDescription: "便签 Pro"
+                )
+            }
             button.action = #selector(togglePopover)
             button.target = self
             button.sendAction(on: [.leftMouseUp, .rightMouseUp])
