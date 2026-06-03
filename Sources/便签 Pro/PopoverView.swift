@@ -632,6 +632,15 @@ struct SettingsView: View {
 
             Spacer()
 
+            if GlobalShortcutManager.shared.shortcut(for: action) != nil {
+                Button(action: { GlobalShortcutManager.shared.clearShortcut(for: action) }) {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.system(size: 12))
+                        .foregroundStyle(.secondary.opacity(0.4))
+                }
+                .buttonStyle(.plain)
+            }
+
             Text(GlobalShortcutManager.shared.shortcutDisplay(for: action))
                 .font(.system(size: 12, weight: .medium, design: .monospaced))
                 .padding(.horizontal, 8)
