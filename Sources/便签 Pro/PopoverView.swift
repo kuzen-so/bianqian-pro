@@ -433,6 +433,7 @@ struct SettingsView: View {
     @State private var launchAtLogin = false
     @State private var isRecordingAction: ShortcutAction? = nil
     @State private var hasAccessibilityPermission = false
+    @ObservedObject var shortcutManager = GlobalShortcutManager.shared
 
     var body: some View {
         VStack(spacing: 0) {
@@ -632,8 +633,8 @@ struct SettingsView: View {
 
             Spacer()
 
-            if GlobalShortcutManager.shared.shortcut(for: action) != nil {
-                Button(action: { GlobalShortcutManager.shared.clearShortcut(for: action) }) {
+            if shortcutManager.shortcut(for: action) != nil {
+                Button(action: { shortcutManager.clearShortcut(for: action) }) {
                     Image(systemName: "xmark.circle.fill")
                         .font(.system(size: 12))
                         .foregroundStyle(.secondary.opacity(0.4))
@@ -641,7 +642,7 @@ struct SettingsView: View {
                 .buttonStyle(.plain)
             }
 
-            Text(GlobalShortcutManager.shared.shortcutDisplay(for: action))
+            Text(shortcutManager.shortcutDisplay(for: action))
                 .font(.system(size: 12, weight: .medium, design: .monospaced))
                 .padding(.horizontal, 8)
                 .padding(.vertical, 4)
@@ -660,7 +661,7 @@ struct SettingsView: View {
                         isRecordingAction = action
                         ShortcutRecorder.shared.startRecording { config in
                             if let config = config {
-                                GlobalShortcutManager.shared.setShortcut(action: action, config: config)
+                                shortcutManager.setShortcut(action: action, config: config)
                             }
                             isRecordingAction = nil
                         }
@@ -716,7 +717,7 @@ struct ShortcutConfig: Codable {
     var keyCode: UInt16
 }
 
-class GlobalShortcutManager {
+class GlobalShortcutManager: ObservableObject {
     static let shared = GlobalShortcutManager()
     private let defaultsKey = "quicknote.shortcut.bindings"
     private var runLoopSource: CFRunLoopSource?
@@ -736,6 +737,7 @@ class GlobalShortcutManager {
             return result
         }
         set {
+            objectWillChange.send()
             var dict: [String: ShortcutConfig] = [:]
             for (action, config) in newValue {
                 dict[action.rawValue] = config
