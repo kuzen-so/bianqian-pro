@@ -7,6 +7,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private var popover: NSPopover!
     private var noteStore = NoteStore()
     private var stickyControllers: [UUID: StickyNoteWindowController] = [:]
+    private var lastInteractedNoteId: UUID?
     private var eventMonitor: EventMonitor?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -78,6 +79,18 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             name: .createQuickNoteSticky,
             object: nil
         )
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(toggleLastStickyNoteFromShortcut),
+            name: .reopenLastStickyNote,
+            object: nil
+        )
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(toggleCollapseLastStickyNoteFromShortcut),
+            name: .toggleCollapseLastStickyNote,
+            object: nil
+        )
     }
 
     @objc private func togglePopoverFromShortcut() {
@@ -86,6 +99,60 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc private func createStickyNoteFromShortcut() {
         createNewStickyNote()
+    }
+
+    @objc private func toggleLastStickyNoteFromShortcut() {
+        toggleLastStickyNote()
+    }
+
+    @objc private func toggleCollapseLastStickyNoteFromShortcut() {
+        guard let noteId = lastInteractedNoteId else { return }
+
+        // 如果该便签没有打开，先打开它
+        if stickyControllers[noteId] == nil {
+            if let index = noteStore.notes.firstIndex(where: { $0.id == noteId }) {
+                var updated = noteStore.notes[index]
+                if updated.isArchived {
+                    noteStore.unarchive(updated)
+                    updated.isArchived = false
+                }
+                updated.isSticky = true
+                noteStore.update(updated)
+                openStickyNote(updated)
+            }
+            return
+        }
+
+        // 已打开，发送通知 toggle 展开/收起
+        NotificationCenter.default.post(
+            name: .toggleCollapseStickyNote,
+            object: nil,
+            userInfo: ["noteId": noteId]
+        )
+    }
+
+    private func toggleLastStickyNote() {
+        guard let noteId = lastInteractedNoteId else { return }
+        guard let index = noteStore.notes.firstIndex(where: { $0.id == noteId }) else {
+            lastInteractedNoteId = nil
+            return
+        }
+
+        // 如果该便签已经以 sticky 形式打开，关闭它
+        if let controller = stickyControllers[noteId] {
+            controller.closeSticky()
+            return
+        }
+
+        // 否则打开它
+        var updated = noteStore.notes[index]
+        if updated.isArchived {
+            noteStore.unarchive(updated)
+            updated.isArchived = false
+        }
+        updated.isSticky = true
+        noteStore.update(updated)
+        openStickyNote(updated)
     }
 
     private func setupStatusBar() {
@@ -146,12 +213,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func closePopover() {
         popover?.performClose(nil)
-        popover = nil
         eventMonitor?.stop()
     }
 
     private func openStickyNote(_ note: Note) {
         guard !note.isArchived, stickyControllers[note.id] == nil else { return }
+
+        lastInteractedNoteId = note.id
 
         let controller = StickyNoteWindowController(
             note: note,
@@ -159,6 +227,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             onClose: { [weak self] in
                 guard let self = self else { return }
                 self.stickyControllers.removeValue(forKey: note.id)
+                self.lastInteractedNoteId = note.id
                 if var updated = self.noteStore.notes.first(where: { $0.id == note.id }) {
                     updated.isSticky = false
                     self.noteStore.update(updated)
@@ -171,6 +240,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 guard let self = self else { return }
                 self.stickyControllers[note.id]?.close()
                 self.stickyControllers.removeValue(forKey: note.id)
+                self.lastInteractedNoteId = note.id
                 self.noteStore.archive(note)
             }
         )
@@ -211,6 +281,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         for controller in stickyControllers.values {
             controller.savePosition()
         }
+        noteStore.flushSave()
     }
 }
 

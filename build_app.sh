@@ -5,6 +5,7 @@ APP_NAME="便签 Pro"
 EXEC_NAME="便签 Pro"
 BUILD_DIR=".build/release"
 APP_BUNDLE="${APP_NAME}.app"
+CERT_NAME="QuickNote Dev"  # 如果要固定签名保留权限，在 Keychain Access 创建同名证书
 
 echo "🔨 Building release binary..."
 swift build -c release
@@ -32,9 +33,9 @@ cat > "${APP_BUNDLE}/Contents/Info.plist" <<EOF
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleShortVersionString</key>
-    <string>1.1.1</string>
+    <string>1.2.0</string>
     <key>CFBundleVersion</key>
-    <string>11</string>
+    <string>12</string>
     <key>LSMinimumSystemVersion</key>
     <string>13.0</string>
     <key>LSUIElement</key>
@@ -50,7 +51,14 @@ cp "Assets/AppIcon.icns" "${APP_BUNDLE}/Contents/Resources/AppIcon.icns"
 cp "Assets/statusbar_icon.png" "${APP_BUNDLE}/Contents/Resources/statusbar_icon.png"
 
 echo "🔏 Code signing app bundle..."
-codesign --force --deep --sign - "${APP_BUNDLE}" 2>/dev/null || true
+if security find-identity -v -p codesigning 2>/dev/null | grep -q "${CERT_NAME}"; then
+    echo "   Using certificate: ${CERT_NAME}"
+    codesign --force --deep --sign "${CERT_NAME}" "${APP_BUNDLE}" 2>/dev/null || true
+else
+    echo "   No '${CERT_NAME}' certificate found, using ad-hoc signing."
+    echo "   (辅助功能权限可能需要重新授权)"
+    codesign --force --deep --sign - "${APP_BUNDLE}" 2>/dev/null || true
+fi
 
 echo "📀 Creating DMG installer..."
 DMG_NAME="便签Pro.dmg"
@@ -58,7 +66,7 @@ BACKGROUND_PNG="dmg_background.png"
 
 rm -f "${DMG_NAME}"
 
-# 生成背景图（上方文字提示 + 简洁背景）
+# 生成背景图
 cat > /tmp/gen_bg.swift <<'BG_EOF'
 import AppKit
 
@@ -68,11 +76,9 @@ let rep = NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: width, pixelsHigh:
 NSGraphicsContext.saveGraphicsState()
 NSGraphicsContext.current = NSGraphicsContext(bitmapImageRep: rep)
 
-// 白色背景
 NSColor.white.setFill()
 NSBezierPath(rect: NSRect(x: 0, y: 0, width: width, height: height)).fill()
 
-// 上方文字
 let text = "将 便签 Pro 拖动到 Applications 文件夹进行安装" as NSString
 let font = NSFont.systemFont(ofSize: 18, weight: .medium)
 let textColor = NSColor.darkGray
@@ -86,7 +92,6 @@ let attrs: [NSAttributedString.Key: Any] = [
 let textSize = text.size(withAttributes: attrs)
 text.draw(in: NSRect(x: 0, y: height - 60, width: width, height: Int(textSize.height)), withAttributes: attrs)
 
-// 底部小提示
 let hint = "或双击 便签 Pro 直接运行" as NSString
 let hintFont = NSFont.systemFont(ofSize: 13, weight: .regular)
 let hintColor = NSColor.gray
@@ -105,8 +110,6 @@ if let data = rep.representation(using: .png, properties: [:]) {
 BG_EOF
 swift /tmp/gen_bg.swift
 
-# 使用 create-dmg 构建安装包
-# 图标大小 128px，Applications 和应用图标一样大
 create-dmg \
   --volname "便签 Pro Installer" \
   --background "${BACKGROUND_PNG}" \
@@ -121,12 +124,35 @@ create-dmg \
 
 rm -f "${BACKGROUND_PNG}"
 
-echo "✅ Done!"
 echo ""
-echo "Build outputs:"
+echo "✅ Build complete!"
+echo ""
+echo "Outputs:"
 echo "  ${APP_BUNDLE}     # App bundle"
 echo "  ${DMG_NAME}       # DMG installer"
 echo ""
-echo "Install:"
-echo "  open ${DMG_NAME}              # Mount and drag to Applications"
-echo "  cp -r ${APP_BUNDLE} /Applications/  # Direct install"
+
+# 自动安装覆盖
+if [ -d "/Applications/${APP_NAME}.app" ]; then
+    echo "🚀 Installing to /Applications (will replace existing)..."
+    killall "${APP_NAME}" 2>/dev/null || true
+    sleep 0.5
+    rm -rf "/Applications/${APP_NAME}.app"
+    cp -R "${APP_NAME}.app" "/Applications/"
+    echo "✅ Installed to /Applications/${APP_NAME}.app"
+    echo ""
+    if [[ -t 0 ]]; then
+        read -q "REPLY?🚀 Launch now? [y/N] "
+        echo ""
+        if [[ "$REPLY" == "y" ]]; then
+            open "/Applications/${APP_NAME}.app"
+        fi
+    else
+        echo "💡 Launch: open \"/Applications/${APP_NAME}.app\""
+    fi
+else
+    echo "💡 First install:"
+    echo "  cp -r '${APP_NAME}.app' /Applications/"
+fi
+
+echo ""

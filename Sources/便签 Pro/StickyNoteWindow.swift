@@ -4,6 +4,7 @@ import QuartzCore
 
 extension Notification.Name {
     static let stickyNoteDoubleClicked = Notification.Name("stickyNoteDoubleClicked")
+    static let stickyNoteEscPressed = Notification.Name("stickyNoteEscPressed")
 }
 
 class StickyNoteWindowController: NSWindowController {
@@ -93,7 +94,7 @@ class StickyNoteWindowController: NSWindowController {
         fatalError("init(coder:) has not been implemented")
     }
 
-    private func closeSticky() {
+    func closeSticky() {
         savePosition()
         onClose()
         close()
@@ -142,6 +143,15 @@ class StickyNoteWindow: NSWindow {
     override var canBecomeMain: Bool { true }
 
     override func sendEvent(_ event: NSEvent) {
+        if event.type == .keyDown && event.keyCode == 53 {
+            NotificationCenter.default.post(
+                name: .stickyNoteEscPressed,
+                object: nil,
+                userInfo: ["noteId": noteId as Any]
+            )
+            return
+        }
+
         switch event.type {
         case .leftMouseDown:
             if event.clickCount == 2, isInTitleBar(event) {
@@ -256,7 +266,16 @@ struct StickyNoteView: View {
             }
         }
         .background(bgColor)
+        .onReceive(NotificationCenter.default.publisher(for: .stickyNoteEscPressed)) { notification in
+            guard let id = notification.userInfo?["noteId"] as? UUID, id == note.id else { return }
+            onClose()
+        }
         .onReceive(NotificationCenter.default.publisher(for: .stickyNoteDoubleClicked)) { notification in
+            guard let id = notification.userInfo?["noteId"] as? UUID, id == note.id else { return }
+            isCollapsed.toggle()
+            onToggleCollapse?(isCollapsed)
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .toggleCollapseStickyNote)) { notification in
             guard let id = notification.userInfo?["noteId"] as? UUID, id == note.id else { return }
             isCollapsed.toggle()
             onToggleCollapse?(isCollapsed)

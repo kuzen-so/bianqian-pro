@@ -5,6 +5,8 @@ class NoteStore: ObservableObject {
     @Published var notes: [Note] = []
 
     private let saveKey = "quicknote.saved.notes"
+    private let debounceInterval: TimeInterval = 0.5
+    private var saveTimer: Timer?
 
     init() {
         load()
@@ -84,6 +86,20 @@ class NoteStore: ObservableObject {
     }
 
     func save() {
+        saveTimer?.invalidate()
+        saveTimer = Timer.scheduledTimer(withTimeInterval: debounceInterval, repeats: false) { [weak self] _ in
+            self?.performSave()
+        }
+    }
+
+    /// 立即保存，用于应用即将终止等场景
+    func flushSave() {
+        saveTimer?.invalidate()
+        saveTimer = nil
+        performSave()
+    }
+
+    private func performSave() {
         if let encoded = try? JSONEncoder().encode(notes) {
             UserDefaults.standard.set(encoded, forKey: saveKey)
         }

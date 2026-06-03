@@ -447,13 +447,6 @@ struct SettingsView: View {
             // 重新注册全局快捷键（权限可能已变更）
             GlobalShortcutManager.shared.register()
         }
-        .task {
-            // 每秒检查一次权限状态，授权后自动刷新 UI
-            while !Task.isCancelled {
-                checkAccessibilityPermission()
-                try? await Task.sleep(nanoseconds: 1_000_000_000)
-            }
-        }
     }
 
     private func checkAccessibilityPermission() {
@@ -687,11 +680,15 @@ struct SettingsView: View {
 enum ShortcutAction: String, Codable, CaseIterable {
     case togglePopover = "togglePopover"
     case createStickyNote = "createStickyNote"
+    case reopenLastSticky = "reopenLastSticky"
+    case toggleCollapseLastSticky = "toggleCollapseLastSticky"
 
     var displayName: String {
         switch self {
         case .togglePopover: return "呼出白板"
         case .createStickyNote: return "新建桌面便签"
+        case .reopenLastSticky: return "打开或关闭最后使用的便签"
+        case .toggleCollapseLastSticky: return "展开/收起最后使用的便签"
         }
     }
 
@@ -699,6 +696,8 @@ enum ShortcutAction: String, Codable, CaseIterable {
         switch self {
         case .togglePopover: return .toggleQuickNotePopover
         case .createStickyNote: return .createQuickNoteSticky
+        case .reopenLastSticky: return .reopenLastStickyNote
+        case .toggleCollapseLastSticky: return .toggleCollapseLastStickyNote
         }
     }
 }
@@ -976,6 +975,9 @@ class ShortcutRecorder {
 extension Notification.Name {
     static let toggleQuickNotePopover = Notification.Name("toggleQuickNotePopover")
     static let createQuickNoteSticky = Notification.Name("createQuickNoteSticky")
+    static let reopenLastStickyNote = Notification.Name("reopenLastStickyNote")
+    static let toggleCollapseLastStickyNote = Notification.Name("toggleCollapseLastStickyNote")
+    static let toggleCollapseStickyNote = Notification.Name("toggleCollapseStickyNote")
 }
 
 struct NoScrollbarScrollView<Content: View>: NSViewRepresentable {
