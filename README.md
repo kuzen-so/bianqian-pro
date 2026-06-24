@@ -20,11 +20,14 @@
 ├── build_app.sh               # 打包脚本
 └── Sources/便签 Pro/
     ├── QuickNote.swift        # 应用入口
-    ├── AppDelegate.swift      # 状态栏、Popover、事件监听
-    ├── PopoverView.swift      # 白板浮层界面
-    ├── StickyNoteWindow.swift # 桌面便签窗口
-    ├── NoteModel.swift        # 数据模型
-    └── NoteStore.swift        # 数据存储
+    ├── AppDelegate.swift      # 状态栏、Popover、便签生命周期
+    ├── Models/                # Note、NoteColor 数据模型
+    ├── Stores/                # NoteStore 数据存储与持久化
+    ├── Views/                 # 白板浮层、便签窗口、列表、设置页
+    ├── Components/            # 文本编辑器、吸附、彩纸、灵动岛等组件
+    ├── Shortcuts/             # 全局快捷键注册与录制
+    ├── Windows/               # 安装引导、事件监听
+    └── Utilities/             # 常量与扩展
 ```
 
 ## 运行方式

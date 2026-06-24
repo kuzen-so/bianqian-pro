@@ -13,7 +13,9 @@ struct ReturnToSubmitTextEditor: NSViewRepresentable {
         scrollView.borderType = .noBorder
         scrollView.drawsBackground = false
 
-        let textView = scrollView.documentView as! NSTextView
+        guard let textView = scrollView.documentView as? NSTextView else {
+            return scrollView
+        }
         textView.delegate = context.coordinator
         textView.isRichText = false
         textView.font = NSFont.systemFont(ofSize: NSFont.systemFontSize)
@@ -26,7 +28,7 @@ struct ReturnToSubmitTextEditor: NSViewRepresentable {
     func updateNSView(_ nsView: NSScrollView, context: Context) {
         nsView.hasVerticalScroller = false
         nsView.verticalScroller = nil
-        let textView = nsView.documentView as! NSTextView
+        guard let textView = nsView.documentView as? NSTextView else { return }
         if textView.string != text {
             textView.string = text
         }

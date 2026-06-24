@@ -50,13 +50,63 @@ echo "🎨 Copying icons..."
 cp "Assets/AppIcon.icns" "${APP_BUNDLE}/Contents/Resources/AppIcon.icns"
 cp "Assets/statusbar_icon.png" "${APP_BUNDLE}/Contents/Resources/statusbar_icon.png"
 
+# 确保存在一个固定的自签名代码签名证书。
+# ad-hoc 签名每次重新编译都会生成新的 cdhash → 系统视为「另一个程序」，
+# 导致开机自启动注册（SMAppService）和辅助功能授权在每次发版后失效。
+# 用同一个证书签名后，签名身份（Designated Requirement）跨版本保持不变，自启动不再失效。
+ensure_signing_cert() {
+    if security find-identity -v -p codesigning 2>/dev/null | grep -q "${CERT_NAME}"; then
+        return 0
+    fi
+    echo "🔐 未找到「${CERT_NAME}」证书，正在自动创建固定的自签名证书..."
+    local tmp; tmp=$(mktemp -d)
+    cat > "${tmp}/openssl.cnf" <<CNF
+[ req ]
+distinguished_name = dn
+x509_extensions    = ext
+prompt             = no
+[ dn ]
+CN = ${CERT_NAME}
+[ ext ]
+basicConstraints   = critical,CA:false
+keyUsage           = critical,digitalSignature
+extendedKeyUsage   = critical,codeSigning
+CNF
+    openssl req -x509 -newkey rsa:2048 -nodes -days 3650 \
+        -keyout "${tmp}/key.pem" -out "${tmp}/cert.pem" \
+        -config "${tmp}/openssl.cnf" >/dev/null 2>&1
+    # OpenSSL 3.x 默认的 PKCS12 算法 macOS security 读不了（MAC verification failed），
+    # 必须用 -legacy + SHA1/3DES，且密码不能为空，否则 import 会失败。
+    local p12pass="quicknote"
+    openssl pkcs12 -export -legacy -macalg sha1 \
+        -keypbe PBE-SHA1-3DES -certpbe PBE-SHA1-3DES \
+        -name "${CERT_NAME}" \
+        -inkey "${tmp}/key.pem" -in "${tmp}/cert.pem" \
+        -out "${tmp}/identity.p12" -passout pass:"${p12pass}" >/dev/null 2>&1
+
+    local kc="${HOME}/Library/Keychains/login.keychain-db"
+    # 导入私钥+证书，并授权 codesign 无提示使用私钥
+    security import "${tmp}/identity.p12" -k "${kc}" -P "${p12pass}" -A \
+        -T /usr/bin/codesign -T /usr/bin/security >/dev/null 2>&1
+    # 信任该证书用于代码签名（首次可能弹一次钥匙串授权，输入登录密码即可）
+    security add-trusted-cert -r trustRoot -p codeSign -k "${kc}" "${tmp}/cert.pem" >/dev/null 2>&1 \
+        || echo "   ⚠️ 自动信任失败：请在「钥匙串访问」里把「${CERT_NAME}」设为 代码签名→始终信任"
+    rm -rf "${tmp}"
+
+    if security find-identity -v -p codesigning 2>/dev/null | grep -q "${CERT_NAME}"; then
+        echo "   ✅ 证书「${CERT_NAME}」已创建（有效期 10 年，以后所有版本复用同一身份）"
+    else
+        echo "   ⚠️ 证书创建后仍不可用，本次将退回 ad-hoc 签名"
+    fi
+}
+
 echo "🔏 Code signing app bundle..."
+ensure_signing_cert
 if security find-identity -v -p codesigning 2>/dev/null | grep -q "${CERT_NAME}"; then
     echo "   Using certificate: ${CERT_NAME}"
-    codesign --force --deep --sign "${CERT_NAME}" "${APP_BUNDLE}" 2>/dev/null || true
+    codesign --force --deep --sign "${CERT_NAME}" "${APP_BUNDLE}"
 else
-    echo "   No '${CERT_NAME}' certificate found, using ad-hoc signing."
-    echo "   (辅助功能权限可能需要重新授权)"
+    echo "   ⚠️ 退回 ad-hoc 签名：开机自启动 / 辅助功能授权可能在重装后失效"
     codesign --force --deep --sign - "${APP_BUNDLE}" 2>/dev/null || true
 fi
 

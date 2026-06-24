@@ -13,11 +13,12 @@ struct Note: Identifiable, Equatable {
     var tags: [String]
     var position: CGPoint?
     var size: CGSize?
+    var screenID: String?
 }
 
 extension Note: Codable {
     enum CodingKeys: String, CodingKey {
-        case id, content, attributedData, createdAt, color, isSticky, isArchived, isPinned, tags
+        case id, content, attributedData, createdAt, color, isSticky, isArchived, isPinned, tags, screenID
         case positionX, positionY, width, height
     }
 
@@ -41,6 +42,7 @@ extension Note: Codable {
            let h = try container.decodeIfPresent(Double.self, forKey: .height) {
             size = CGSize(width: w, height: h)
         }
+        screenID = try container.decodeIfPresent(String.self, forKey: .screenID)
     }
 
     func encode(to encoder: Encoder) throws {
@@ -63,79 +65,6 @@ extension Note: Codable {
             try container.encode(size.width, forKey: .width)
             try container.encode(size.height, forKey: .height)
         }
-    }
-}
-
-enum NoteColor: String, Codable, CaseIterable {
-    case auto = "auto"
-    case yellow = "#FFF9C4"
-    case green = "#C8E6C9"
-    case blue = "#BBDEFB"
-    case pink = "#F8BBD0"
-    case purple = "#E1BEE7"
-    case orange = "#FFE0B2"
-    case white = "#FFFFFF"
-    case gray = "#BDBDBD"
-    case dark = "#424242"
-
-    static var allCases: [NoteColor] {
-        [.auto, .yellow, .green, .blue, .pink, .purple, .orange]
-    }
-
-    var swiftUIColor: Color {
-        if self == .auto {
-            let isDark = UserDefaults.standard.string(forKey: "AppleInterfaceStyle") == "Dark"
-            return isDark ? Color(white: 0.20) : Color(white: 0.90)
-        }
-        return Color(hex: self.rawValue) ?? .white
-    }
-
-    var nsColor: NSColor {
-        NSColor(self.swiftUIColor)
-    }
-
-    var displayName: String {
-        switch self {
-        case .auto:   return "跟随系统"
-        case .yellow: return "黄色"
-        case .green:  return "绿色"
-        case .blue:   return "蓝色"
-        case .pink:   return "粉色"
-        case .purple: return "紫色"
-        case .orange: return "橙色"
-        case .white:  return "白色"
-        case .gray:   return "灰色"
-        case .dark:   return "深色"
-        }
-    }
-}
-
-func systemDefaultNoteColor() -> NoteColor {
-    .auto
-}
-
-extension Color {
-    init?(hex: String) {
-        let hex = hex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
-        var int: UInt64 = 0
-        Scanner(string: hex).scanHexInt64(&int)
-        let a, r, g, b: UInt64
-        switch hex.count {
-        case 3:
-            (a, r, g, b) = (255, (int >> 8) * 17, (int >> 4 & 0xF) * 17, (int & 0xF) * 17)
-        case 6:
-            (a, r, g, b) = (255, int >> 16, int >> 8 & 0xFF, int & 0xFF)
-        case 8:
-            (a, r, g, b) = (int >> 24, int >> 16 & 0xFF, int >> 8 & 0xFF, int & 0xFF)
-        default:
-            return nil
-        }
-        self.init(
-            .sRGB,
-            red: Double(r) / 255,
-            green: Double(g) / 255,
-            blue: Double(b) / 255,
-            opacity: Double(a) / 255
-        )
+        try container.encodeIfPresent(screenID, forKey: .screenID)
     }
 }
